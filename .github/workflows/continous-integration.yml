@@ -35,6 +35,10 @@ jobs:
           name: Executable
           path: target/release/papierkram
 
+  release:
+    needs: [ build, quickcheck ]
+    steps:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "target/release/papierkram"
+          tag: "v${{needs.quickcheck.outputs.version}}"
