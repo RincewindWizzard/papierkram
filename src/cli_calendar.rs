@@ -44,8 +44,6 @@ pub fn calendar_table<F>(start: NaiveDate, end: NaiveDate, f: F) -> TableStruct
     }
 
 
-    
-
     table
         .table()
         .title(header)
