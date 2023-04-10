@@ -42,6 +42,10 @@ jobs:
         with:
           artifacts: "target/release/papierkram,target/debian/*.deb"
           tag: "v${{ env.version }}"
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "target/release/papierkram,target/debian/*.deb"
+          tag: "latest"
 
   ppa:
     name: "Creates a PPA in Github Pages"
