@@ -24,6 +24,7 @@ pub enum Commands {
         date: Option<String>,
         location: String,
     },
+    /// Prints a calender showing the weeks in rows
     Calendar {
         start: Option<String>,
         end: Option<String>,
