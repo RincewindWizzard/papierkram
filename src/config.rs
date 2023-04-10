@@ -72,7 +72,7 @@ impl ApplicationConfig {
         debug!("Create path: {}", data_path.display());
         fs::create_dir_all(&data_path).expect("Data Path can not be created!");
 
-        let data_path = fs::canonicalize(&data_path).expect(&format!("Data Path '{}' does not exist!", data_path.display()));
+        let data_path = fs::canonicalize(&data_path).unwrap_or_else(|_| panic!("Data Path '{}' does not exist!", data_path.display()));
 
 
         let project_dirs = ProjectDirs::from_path(data_path)?;
