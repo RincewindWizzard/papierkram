@@ -15,7 +15,7 @@ jobs:
         with:
           toolchain: stable
       - run: cargo clean
-      - run: echo "$(cargo pkgid | cut -d# -f2)" > target/version
+      - run: mkdir target || true; echo "$(cargo pkgid | cut -d# -f2)" > target/version
       - run: cargo build --release --all-features
       - run: cargo install cargo-deb
       - run: cargo deb
