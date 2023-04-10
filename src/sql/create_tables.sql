@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS "office_location" (
-    instant TEXT PRIMARY KEY NOT NULL,
-    location TEXT NOT NULL
+    instant TEXT  NOT NULL,
+    location TEXT NOT NULL,
+    PRIMARY KEY (instant, location)
 );

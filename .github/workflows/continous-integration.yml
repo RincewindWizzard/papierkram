@@ -45,6 +45,7 @@ jobs:
         with:
           artifacts: "target/release/papierkram,target/debian/*.deb"
           tag: "latest"
+          allowUpdates: true
 
   ppa:
     name: "Creates a PPA in Github Pages"

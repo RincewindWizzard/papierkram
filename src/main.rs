@@ -10,8 +10,6 @@ use chrono::{Datelike, Duration, NaiveTime, TimeZone, Utc};
 use clap::Parser;
 
 
-
-
 use log::{debug, error, SetLoggerError, warn};
 use rusqlite::Connection;
 
@@ -150,6 +148,7 @@ fn execute_detect(config: ApplicationConfig, connection: Connection) {
 
         if result {
             results.push(connection.add_current_location(&name));
+            println!("Detected {}", name);
         } else {
             debug!("{name} was not detected.");
         }
