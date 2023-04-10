@@ -1,3 +1,6 @@
+//! A useful tool to help you doing less paperwork while working.
+//! Currently only auto detection of workplace (remote, at-site) is supported.
+
 use std::cmp::{max, min};
 use std::io;
 
@@ -18,12 +21,14 @@ use crate::datastore::{connect_database, LocationStore};
 use crate::dates::{parse_date_time};
 use crate::models::OfficeLocation;
 
+
 mod models;
 mod args;
 mod config;
 mod datastore;
 mod dates;
 mod cli_calendar;
+
 
 fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
     stderrlog::new()
@@ -40,6 +45,7 @@ fn load_config() -> Result<ApplicationConfig, ConfyError> {
 }
 
 
+/// Main Method
 fn main() {
     use crate::args::{Commands};
     let args = Args::parse();
