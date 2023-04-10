@@ -66,7 +66,8 @@ jobs:
         with:
           name: target
           path: target
-
+      - run: echo "${{ secrets.PPA_SIGNING_KEY }}" > ppa_signing_key.gpg
+      - run: gpg --import ppa_signing_key.gpg
       - run: bash build-ppa.sh
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
