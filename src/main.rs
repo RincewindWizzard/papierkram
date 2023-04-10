@@ -10,7 +10,7 @@ use chrono::{Datelike, Duration, NaiveTime, TimeZone, Utc};
 use clap::Parser;
 
 
-use confy::ConfyError;
+
 
 use log::{debug, error, SetLoggerError, warn};
 use rusqlite::Connection;

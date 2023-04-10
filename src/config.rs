@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use confy::ConfyError;
 use directories::ProjectDirs;
 use log::debug;
@@ -125,7 +125,7 @@ impl ApplicationConfig {
 
 
     pub fn save_config(&self) -> Result<(), ConfyError> {
-        let project_dirs = ApplicationConfig::project_dirs()
+        let _project_dirs = ApplicationConfig::project_dirs()
             .ok_or(ConfyError::BadConfigDirectory("could not determine home directory path".to_string()))?;
         confy::store_path(ApplicationConfig::config_file_path()?, self)
     }
