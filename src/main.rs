@@ -13,7 +13,7 @@ use clap::Parser;
 use log::{debug, error, SetLoggerError, warn};
 use rusqlite::Connection;
 
-use crate::args::{Args, ProbeCommand};
+use crate::args::{Args, EventCommand, ProbeCommand};
 use crate::cli_calendar::calendar_table;
 use crate::config::{ApplicationConfig, Probe};
 use crate::datastore::{connect_database, LocationStore};
@@ -55,20 +55,24 @@ fn main() {
     let connection = connect_database(&config).expect("Could not connect to Database!");
 
     match &args.command {
-        Commands::Insert { date, event } => {
-            execute_add(connection, date, event);
-        }
-        Commands::Calendar { start, end } => {
-            execute_calendar(connection, start, end);
-        }
-        Commands::List {} => {
-            execute_list(connection);
-        }
-        Commands::Export {} => {
-            execute_export(config, connection);
-        }
-        Commands::Import {} => {
-            execute_import(config, connection);
+        Commands::Event { sub_command } => {
+            match sub_command {
+                EventCommand::Insert { date, event } => {
+                    execute_add(connection, date, event);
+                }
+                EventCommand::Calendar { start, end } => {
+                    execute_calendar(connection, start, end);
+                }
+                EventCommand::List {} => {
+                    execute_list(connection);
+                }
+                EventCommand::Export {} => {
+                    execute_export(config, connection);
+                }
+                EventCommand::Import {} => {
+                    execute_import(config, connection);
+                }
+            }
         }
         Commands::Detect {} => {
             execute_detect(config, connection);
