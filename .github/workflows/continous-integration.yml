@@ -6,27 +6,16 @@ on:
 name: Continuous Integration
 
 jobs:
-  quickcheck:
-    name: "Get the version from Cargo.toml"
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.rustversion.outputs.rustversion }}
-    steps:
-      - uses: actions/checkout@v2
-      - run: cargo check
-      - run: cargo pkgid
-      - run: 'echo "$(cargo pkgid | cut -d# -f2)"'
-      - id: rustversion
-        run: 'echo "::set-output name=rustversion::$(cargo pkgid | cut -d# -f2)"'
   build:
     name: Compiling rust binary
     runs-on: ubuntu-latest
-    needs: [ quickcheck ]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - run: echo "$(cargo pkgid | cut -d# -f2)" > target/version
+      - run: cargo clean
       - run: cargo build --release --all-features
       - run: cargo install cargo-deb
       - run: cargo deb
@@ -39,7 +28,7 @@ jobs:
   release:
     name: "Release Version ${{needs.quickcheck.outputs.version}}"
     runs-on: ubuntu-latest
-    needs: [ build, quickcheck ]
+    needs: [ build ]
     permissions:
       contents: write
     steps:
@@ -47,15 +36,16 @@ jobs:
         with:
           name: target
           path: target
+      - run: echo "version=$(cat target/version)" >> $GITHUB_ENV
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "target/release/papierkram"
-          tag: "v${{needs.quickcheck.outputs.version}}"
+          tag: "v${{version}}"
 
   ppa:
     name: "Creates a PPA in Github Pages"
     runs-on: ubuntu-latest
-    needs: [ build, quickcheck ]
+    needs: [ build ]
     permissions:
       contents: read
       pages: write
