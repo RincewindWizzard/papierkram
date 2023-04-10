@@ -1,1 +1,2 @@
 cargo bump
+git add Cargo.toml
