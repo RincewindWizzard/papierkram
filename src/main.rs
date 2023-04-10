@@ -2,6 +2,7 @@
 //! Currently only auto detection of workplace (remote, at-site) is supported.
 
 use std::cmp::{max, min};
+use std::collections::HashMap;
 use std::io;
 
 
@@ -14,9 +15,9 @@ use confy::ConfyError;
 use log::{debug, error, SetLoggerError, warn};
 use rusqlite::Connection;
 
-use crate::args::{Args};
+use crate::args::{Args, ProbeCommand};
 use crate::cli_calendar::calendar_table;
-use crate::config::ApplicationConfig;
+use crate::config::{ApplicationConfig, Probe};
 use crate::datastore::{connect_database, LocationStore};
 use crate::dates::{parse_date_time};
 use crate::models::OfficeLocation;
@@ -39,18 +40,13 @@ fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
         .init()
 }
 
-fn load_config() -> Result<ApplicationConfig, ConfyError> {
-    let config: ApplicationConfig = confy::load(env!("CARGO_PKG_NAME"), "main")?;
-    Ok(config)
-}
-
 
 /// Main Method
 fn main() {
     use crate::args::{Commands};
     let args = Args::parse();
     setup_logging(&args).expect("Failed to setup logging!");
-    let config: ApplicationConfig = load_config().expect("Could not load configuration!");
+    let mut config: ApplicationConfig = ApplicationConfig::load_config().expect("Could not load configuration!");
 
     if let Commands::Clear {} = &args.command {
         warn!("Removing old database and creating new.");
@@ -61,8 +57,8 @@ fn main() {
     let connection = connect_database(&config).expect("Could not connect to Database!");
 
     match &args.command {
-        Commands::Add { date, location } => {
-            execute_add(connection, date, location);
+        Commands::Insert { date, event } => {
+            execute_add(connection, date, event);
         }
         Commands::Calendar { start, end } => {
             execute_calendar(connection, start, end);
@@ -79,7 +75,45 @@ fn main() {
         Commands::Detect {} => {
             execute_detect(config, connection);
         }
+        Commands::Probe { sub_command } => {
+            execute_probe(&mut config, sub_command);
+        }
         _ => {}
+    }
+}
+
+fn execute_probe(config: &mut ApplicationConfig, sub_command: &ProbeCommand) {
+    match sub_command {
+        ProbeCommand::Add { event, cmd } => {
+            let result = config.add_probe(event.to_string(), cmd.clone());
+            if result.is_err() {
+                println!("Could not add new probe! {:?}", result);
+            } else {
+                println!("Probe succesfully added.");
+            }
+        }
+        ProbeCommand::Remove { event } => {
+            let result = config.remove_probe(event.to_string());
+            if result.is_err() {
+                println!("Could not remove probe! {:?}", result);
+            } else {
+                println!("Probe removed");
+            }
+        }
+        ProbeCommand::Show {} => {
+            use serde_derive::{Deserialize, Serialize};
+            let local_config = config.clone();
+
+            // exclude all other configurations and show only the probe configuration
+            #[derive(Deserialize, Serialize, Debug)]
+            struct Probes {
+                probes: HashMap<String, Probe>,
+            }
+            let toml = toml::to_string(&Probes {
+                probes: local_config.probes,
+            }).expect("Could not serialize to toml");
+            println!("{toml}");
+        }
     }
 }
 

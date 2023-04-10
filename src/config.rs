@@ -1,23 +1,24 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use confy::ConfyError;
 use directories::ProjectDirs;
 use log::debug;
 use serde_derive::{Deserialize, Serialize};
 
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ApplicationConfig {
     pub probes: HashMap<String, Probe>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Probe {
-    color: Option<Color>,
+    pub color: Option<Color>,
     pub command: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Color {
     Black,
     Blue,
@@ -64,7 +65,7 @@ impl From<Color> for cli_table::Color {
 impl ApplicationConfig {
     /// In debug mode create project data in local path
     #[cfg(debug_assertions)]
-    pub fn project_dirs(&self) -> Option<ProjectDirs> {
+    pub fn project_dirs() -> Option<ProjectDirs> {
         let exe_path = std::env::current_exe().expect("Could not get the path of the current executable!");
         let mut data_path = PathBuf::from(exe_path.parent()?);
         data_path.push("data");
@@ -83,7 +84,7 @@ impl ApplicationConfig {
 
     /// In production mode create project data in the correct paths
     #[cfg(not(debug_assertions))]
-    pub fn project_dirs(&self) -> Option<ProjectDirs> {
+    pub fn project_dirs() -> Option<ProjectDirs> {
         let project_dirs = ProjectDirs::from(
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_HOMEPAGE"),
@@ -92,8 +93,41 @@ impl ApplicationConfig {
         Some(project_dirs)
     }
 
+    pub fn add_probe(&mut self, name: String, command: String) -> Result<(), ConfyError> {
+        self.probes.insert(name, Probe {
+            color: None,
+            command,
+        });
+        self.save_config()
+    }
+
+    pub fn remove_probe(&mut self, name: String) -> Result<(), ConfyError> {
+        self.probes.remove(&name);
+        self.save_config()
+    }
+
     pub fn database_path(&self) -> Option<PathBuf> {
-        Some(self.project_dirs()?.data_dir().join(format!("{}.db", env!("CARGO_PKG_NAME"))))
+        Some(ApplicationConfig::project_dirs()?.data_dir().join(format!("{}.db", env!("CARGO_PKG_NAME"))))
+    }
+
+    fn config_file_path() -> Result<PathBuf, ConfyError> {
+        let project_dirs = ApplicationConfig::project_dirs()
+            .ok_or(ConfyError::BadConfigDirectory("could not determine home directory path".to_string()))?;
+        let mut config_file_path = PathBuf::from(project_dirs.config_dir());
+        config_file_path.push("main.toml");
+        Ok(config_file_path)
+    }
+
+    pub fn load_config() -> Result<ApplicationConfig, ConfyError> {
+        let config: ApplicationConfig = confy::load_path(ApplicationConfig::config_file_path()?)?;
+        Ok(config)
+    }
+
+
+    pub fn save_config(&self) -> Result<(), ConfyError> {
+        let project_dirs = ApplicationConfig::project_dirs()
+            .ok_or(ConfyError::BadConfigDirectory("could not determine home directory path".to_string()))?;
+        confy::store_path(ApplicationConfig::config_file_path()?, self)
     }
 }
 

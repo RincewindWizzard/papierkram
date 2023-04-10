@@ -1,7 +1,7 @@
 use std::ops::Rem;
 use chrono::{Datelike, Duration, NaiveDate};
 use cli_table::{Cell, CellStruct, Style, Table, TableStruct};
-use log::debug;
+use log::{debug, trace};
 
 
 pub fn calendar_table<F>(start: NaiveDate, end: NaiveDate, f: F) -> TableStruct
@@ -39,7 +39,7 @@ pub fn calendar_table<F>(start: NaiveDate, end: NaiveDate, f: F) -> TableStruct
         let current_date = start + Duration::days(i);
         let iso_week = (current_date - start).num_weeks() as usize;
         let day_of_week = current_date.weekday().num_days_from_monday() as usize;
-        debug!("Adding {current_date} to calendar");
+        trace!("Adding {current_date} to calendar");
         table[iso_week][day_of_week + 1] = f(current_date);
     }
 

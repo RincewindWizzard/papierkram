@@ -15,25 +15,61 @@ pub struct Args {
     pub(crate) quiet: bool,
 }
 
+type Event = String;
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// adds a new location to the database
-    Add {
+    /// inserts a new event to the database
+    Insert {
         /// manually overwrite the timestamp of the entry
         #[arg(short, long)]
         date: Option<String>,
-        location: String,
+        /// name of the event to be inserted
+        event: Event,
     },
     /// Prints a calender showing the weeks in rows
     Calendar {
+        /// begin of the calendar
         start: Option<String>,
+        /// end of the calendar.
+        /// leave blank for today
         end: Option<String>,
     },
+    /// changes the probes in the configuration
+    Probe {
+        #[command(subcommand)]
+        sub_command: ProbeCommand,
+    },
+    /// removes database
     Clear {},
+
+    /// execute all probes and insert all detected events
     Detect {},
+
+    /// export database to json
     Export {},
+
+    /// import database from json
     Import {},
+
+    /// list all events as a table
     List {},
 }
 
-
+#[derive(Debug, Subcommand)]
+pub enum ProbeCommand {
+    /// adds a new probe to the configuration
+    Add {
+        /// name of the probe.
+        event: Event,
+        /// command to execute for detection of presence
+        cmd: String,
+    },
+    /// removes a probe from the configuration
+    Remove {
+        /// name of the probe.
+        event: Event,
+    },
+    /// shows all configured probes
+    Show {},
+}
