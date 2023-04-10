@@ -18,7 +18,7 @@ jobs:
       - id: rustversion
         run: 'echo "::set-output name=rustversion::$(cargo pkgid | cut -d# -f2)"'
   build:
-    name: Rust project
+    name: Compiling rust binary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -36,6 +36,8 @@ jobs:
           path: target/release/papierkram
 
   release:
+    name: "Release Version ${{needs.quickcheck.outputs.version}}"
+    runs-on: ubuntu-latest
     needs: [ build, quickcheck ]
     steps:
       - uses: ncipollo/release-action@v1
