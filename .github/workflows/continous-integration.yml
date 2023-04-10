@@ -14,9 +14,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: mkdir target || true
-      - run: echo "$(cargo pkgid | cut -d# -f2)" > target/version
       - run: cargo clean
+      - run: echo "$(cargo pkgid | cut -d# -f2)" > target/version
       - run: cargo build --release --all-features
       - run: cargo install cargo-deb
       - run: cargo deb
