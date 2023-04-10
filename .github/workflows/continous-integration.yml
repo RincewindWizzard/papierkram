@@ -7,6 +7,7 @@ name: Continuous Integration
 
 jobs:
   quickcheck:
+    name: "Get the version from Cargo.toml"
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.rustversion.outputs.rustversion }}
@@ -39,6 +40,8 @@ jobs:
     name: "Release Version ${{needs.quickcheck.outputs.version}}"
     runs-on: ubuntu-latest
     needs: [ build, quickcheck ]
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v3
         with:
