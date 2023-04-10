@@ -40,7 +40,7 @@ jobs:
       - run: echo "version=$(cat target/version)" >> $GITHUB_ENV
       - uses: ncipollo/release-action@v1
         with:
-          artifacts: "target/release/papierkram"
+          artifacts: "target/release/papierkram,target/debian/*.deb"
           tag: "v${{ env.version }}"
 
   ppa:
