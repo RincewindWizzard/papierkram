@@ -10,6 +10,13 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ApplicationConfig {
     pub probes: HashMap<String, Probe>,
+    pub toggl: Option<Toggl>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Toggl {
+    pub username: String,
+    pub password: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

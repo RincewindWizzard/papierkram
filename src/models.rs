@@ -1,4 +1,5 @@
-use chrono::{DateTime, Local, Utc};
+use chrono::Duration;
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 
 
 use serde_derive::{Deserialize, Serialize};
@@ -8,6 +9,22 @@ use serde_derive::{Deserialize, Serialize};
 pub struct OfficeLocation {
     pub instant: DateTime<Utc>,
     pub location: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimeEntry {
+    pub id: i64,
+    pub description: Option<String>,
+    pub start: DateTime<Utc>,
+    pub stop: Option<DateTime<Utc>>,
+    pub project_id: Option<i64>,
+    pub workspace_id: Option<i64>,
+}
+
+impl TimeEntry {
+    pub(crate) fn duration(&self) -> Option<Duration> {
+        self.stop.map(|stop| stop - self.start)
+    }
 }
 
 

@@ -34,6 +34,12 @@ pub enum Commands {
 
     /// removes database
     Clear {},
+    /// show current configuration
+    Config {},
+    Toggl {
+        #[command(subcommand)]
+        sub_command: TogglCommand,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -51,6 +57,15 @@ pub enum ProbeCommand {
         event: Event,
     },
     /// shows all configured probes
+    Show {},
+}
+
+#[derive(Debug, Subcommand)]
+pub enum TogglCommand {
+    Token {
+        token: String,
+    },
+
     Show {},
 }
 

@@ -42,22 +42,22 @@ pub fn connect_database(config: &ApplicationConfig) -> Result<Connection, DataSt
 }
 
 
-pub trait LocationStore {
-    fn add_current_location(&self, location: &String) -> Result<(), DataStoreError>;
-    fn add_location(&self, office_location: &OfficeLocation) -> Result<(), DataStoreError>;
-    fn list_locations(&self) -> Result<Vec<OfficeLocation>, DataStoreError>;
-    fn list_entries_by_date(&self, date: NaiveDate) -> Result<Vec<OfficeLocation>, DataStoreError>;
+pub trait EventStore {
+    fn add_current_event(&self, location: &String) -> Result<(), DataStoreError>;
+    fn add_event(&self, office_location: &OfficeLocation) -> Result<(), DataStoreError>;
+    fn list_events(&self) -> Result<Vec<OfficeLocation>, DataStoreError>;
+    fn list_events_group_by_date(&self, date: NaiveDate) -> Result<Vec<OfficeLocation>, DataStoreError>;
 }
 
-impl LocationStore for Connection {
-    fn add_current_location(&self, location: &String) -> Result<(), DataStoreError> {
-        self.add_location(&OfficeLocation {
+impl EventStore for Connection {
+    fn add_current_event(&self, location: &String) -> Result<(), DataStoreError> {
+        self.add_event(&OfficeLocation {
             instant: Utc::now(),
             location: location.clone(),
         })
     }
 
-    fn add_location(&self, office_location: &OfficeLocation) -> Result<(), DataStoreError> {
+    fn add_event(&self, office_location: &OfficeLocation) -> Result<(), DataStoreError> {
         let count = self.execute(
             "REPLACE INTO office_location (instant, location) VALUES (?, ?);",
             params![office_location.instant, office_location.location])?;
@@ -70,26 +70,26 @@ impl LocationStore for Connection {
         }
     }
 
-    fn list_locations(&self) -> Result<Vec<OfficeLocation>, DataStoreError> {
+    fn list_events(&self) -> Result<Vec<OfficeLocation>, DataStoreError> {
         let mut stmt = self.prepare(
             "SELECT instant, location from office_location;",
         )?;
 
         let entries: Vec<OfficeLocation> = stmt
-            .query_map(params![], office_location_from_row)?
+            .query_map(params![], OfficeLocation::from_row)?
             .map(|x| x.unwrap())
             .collect();
 
         Ok(entries)
     }
 
-    fn list_entries_by_date(&self, date: NaiveDate) -> Result<Vec<OfficeLocation>, DataStoreError> {
+    fn list_events_group_by_date(&self, date: NaiveDate) -> Result<Vec<OfficeLocation>, DataStoreError> {
         let mut stmt = self.prepare(
             "select instant, location from office_location GROUP BY DATE(instant), location HAVING DATE(instant) = ?;",
         )?;
 
         let entries: Vec<OfficeLocation> = stmt
-            .query_map(params![date], office_location_from_row)?
+            .query_map(params![date], OfficeLocation::from_row)?
             .filter_map(|x| x.ok())
             .collect();
 
@@ -97,12 +97,20 @@ impl LocationStore for Connection {
     }
 }
 
-fn office_location_from_row(row: &Row) -> rusqlite::Result<OfficeLocation> {
-    Ok(OfficeLocation {
-        instant: row.get(0)?,
-        location: row.get(1)?,
-    })
+pub trait FromRow
+    where
+        Self: Sized,
+{
+    fn from_row(row: &Row) -> rusqlite::Result<Self>;
 }
 
+impl FromRow for OfficeLocation {
+    fn from_row(row: &Row) -> rusqlite::Result<OfficeLocation> {
+        Ok(OfficeLocation {
+            instant: row.get(0)?,
+            location: row.get(1)?,
+        })
+    }
+}
 
 

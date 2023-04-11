@@ -6,19 +6,21 @@ use std::collections::HashMap;
 use std::io;
 
 
-use chrono::{Datelike, Duration, NaiveTime, TimeZone, Utc};
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime, TimeZone, Utc};
 use clap::Parser;
+use confy::ConfyError;
 
 
 use log::{debug, error, SetLoggerError, warn};
 use rusqlite::Connection;
 
-use crate::args::{Args, EventCommand, ProbeCommand};
+use crate::args::{Args, EventCommand, ProbeCommand, TogglCommand};
 use crate::cli_calendar::calendar_table;
-use crate::config::{ApplicationConfig, Probe};
-use crate::datastore::{connect_database, LocationStore};
+use crate::config::{ApplicationConfig, Probe, Toggl};
+use crate::datastore::{connect_database, EventStore};
 use crate::dates::{parse_date_time};
 use crate::models::OfficeLocation;
+use crate::toggl::get_time_entries;
 
 
 mod models;
@@ -27,6 +29,7 @@ mod config;
 mod datastore;
 mod dates;
 mod cli_calendar;
+mod toggl;
 
 
 fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
@@ -80,7 +83,46 @@ fn main() {
         Commands::Probe { sub_command } => {
             execute_probe(&mut config, sub_command);
         }
-        _ => {}
+        Commands::Clear { .. } => {}
+        Commands::Toggl { sub_command } => {
+            match sub_command {
+                TogglCommand::Token { token } => {
+                    // TODO: might override future attributes
+                    config.toggl = Some(config::Toggl {
+                        username: token.clone(),
+                        password: "api_token".to_string(),
+                    });
+                    match config.save_config() {
+                        Ok(_) => {
+                            println!("Saved api code!");
+                        }
+                        Err(_) => {
+                            error!("Could not save config file!");
+                        }
+                    }
+                }
+                TogglCommand::Show { .. } => {
+                    match config.toggl {
+                        None => {
+                            error!("There is no toggl access configured!")
+                        }
+                        Some(toggl) => {
+                            let now = Utc::now().date_naive();
+                            let start = now - Duration::weeks(9);
+                            let end = now + Duration::days(1);
+                            let result = get_time_entries(&toggl, &start, &end)
+                                .expect("Could not access the toggl API!");
+
+                            println!("{:?}", result);
+                        }
+                    }
+                }
+            }
+        }
+        Commands::Config { .. } => {
+            let toml = toml::to_string(&config);
+            println!("{}", toml.unwrap());
+        }
     }
 }
 
@@ -120,7 +162,7 @@ fn execute_probe(config: &mut ApplicationConfig, sub_command: &ProbeCommand) {
 }
 
 fn execute_export(_config: ApplicationConfig, connection: Connection) {
-    let rows = connection.list_locations().expect("Could not load rows from database!");
+    let rows = connection.list_events().expect("Could not load rows from database!");
     let json = serde_json::to_string_pretty(&rows).expect("Could not serialize to json!");
     println!("{}", json);
 }
@@ -130,7 +172,7 @@ fn execute_import(_config: ApplicationConfig, connection: Connection) {
     debug!("Read data: {:?}", rows);
 
     for row in rows {
-        connection.add_location(&row)
+        connection.add_event(&row)
             .err()
             .map(|e| warn!("Could not insert row: {:?}; Error: {:?}", row, e));
     }
@@ -151,7 +193,7 @@ fn execute_detect(config: ApplicationConfig, connection: Connection) {
             .success();
 
         if result {
-            results.push(connection.add_current_location(&name));
+            results.push(connection.add_current_event(&name));
             println!("Detected {}", name);
         } else {
             debug!("{name} was not detected.");
@@ -190,7 +232,7 @@ fn execute_calendar(connection: Connection, start: &Option<String>, end: &Option
         end.date_naive(),
         |date| {
             connection
-                .list_entries_by_date(date)
+                .list_events_group_by_date(date)
                 .unwrap_or(vec![])
                 .iter()
                 .map(|office_location| office_location.location.clone())
@@ -207,7 +249,7 @@ fn execute_calendar(connection: Connection, start: &Option<String>, end: &Option
 fn execute_add(connection: Connection, date: &Option<String>, location: &String) {
     match date {
         None => {
-            connection.add_current_location(location)
+            connection.add_current_event(location)
                 .expect("Could not add location!");
         }
         Some(date_str) => {
@@ -221,7 +263,7 @@ fn execute_add(connection: Connection, date: &Option<String>, location: &String)
                         instant: date.with_timezone(&Utc),
                         location: location.clone(),
                     };
-                    connection.add_location(&office_location)
+                    connection.add_event(&office_location)
                         .expect("Could not add location!")
                 }
             }
@@ -233,7 +275,7 @@ fn execute_add(connection: Connection, date: &Option<String>, location: &String)
 fn execute_list(connection: Connection) {
     use cli_table::{Cell, print_stdout, Style, Table};
 
-    let table = connection.list_locations()
+    let table = connection.list_events()
         .expect("Could not list locations from database!")
         .iter()
         .map(|x| x.into())
