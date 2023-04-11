@@ -19,7 +19,7 @@ use crate::cli_calendar::calendar_table;
 use crate::config::{ApplicationConfig, Probe, Toggl};
 use crate::datastore::{connect_database, EventStore};
 use crate::dates::{parse_date_time};
-use crate::models::OfficeLocation;
+use crate::models::Event;
 use crate::toggl::get_time_entries;
 
 
@@ -168,7 +168,7 @@ fn execute_export(_config: ApplicationConfig, connection: Connection) {
 }
 
 fn execute_import(_config: ApplicationConfig, connection: Connection) {
-    let rows: Vec<OfficeLocation> = serde_json::from_reader(io::stdin()).expect("Could not read JSON from stdin!");
+    let rows: Vec<Event> = serde_json::from_reader(io::stdin()).expect("Could not read JSON from stdin!");
     debug!("Read data: {:?}", rows);
 
     for row in rows {
@@ -259,7 +259,7 @@ fn execute_add(connection: Connection, date: &Option<String>, location: &String)
                     error!("Could not parse date! {}", date_str);
                 }
                 Ok(date) => {
-                    let office_location = OfficeLocation {
+                    let office_location = Event {
                         instant: date.with_timezone(&Utc),
                         location: location.clone(),
                     };
