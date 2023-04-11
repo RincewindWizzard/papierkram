@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS "office_location" (
     instant TEXT  NOT NULL,
     location TEXT NOT NULL,
@@ -12,3 +14,5 @@ CREATE TABLE IF NOT EXISTS time_entries (
   project_id INTEGER,
   workspace_id INTEGER
 );
+
+COMMIT;

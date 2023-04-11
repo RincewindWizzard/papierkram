@@ -1,9 +1,9 @@
 use chrono::{NaiveDate, Utc};
 use log::debug;
-use rusqlite::{Connection, params, Params, Row, Statement};
+use rusqlite::{Connection, Error, params, Params, Row, Statement};
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStoreError::{Filesystem, UnexpectedRowCount};
-use crate::models::Event;
+use crate::models::{Event, TimeEntry};
 
 #[allow(dead_code)]
 #[derive(thiserror::Error, Debug)]
@@ -35,13 +35,15 @@ pub fn connect_database(config: &ApplicationConfig) -> Result<Connection, DataSt
 
     // running migrations
     let sql = include_str!("sql/create_tables.sql");
-    connection.execute(sql, [])?;
+    debug!("Executing sql: {sql}");
+    connection.execute_batch(sql)?;
 
     debug!("Succesfully setup database at {}", database_path.display());
     Ok(connection)
 }
 
 pub trait SqlConnection {
+    fn execute<P: Params>(&self, sql: &str, params: P) -> Result<usize, rusqlite::Error>;
     fn prepare(&self, sql: &str) -> Result<rusqlite::Statement<'_>, rusqlite::Error>;
     fn select<R, P>(&self, sql: &str, param: P) -> Result<Vec<R>, DataStoreError>
         where
@@ -57,9 +59,22 @@ pub trait SqlConnection {
                 .collect();
         Ok(result)
     }
+    fn replace_into<P: Params>(&self, sql: &str, param: P) -> Result<(), DataStoreError> {
+        let count = self.execute(sql, param)?;
+
+        if count == 1 {
+            Ok(())
+        } else {
+            Err(UnexpectedRowCount(count, 1))
+        }
+    }
 }
 
 impl SqlConnection for Connection {
+    fn execute<P: Params>(&self, sql: &str, params: P) -> Result<usize, Error> {
+        self.execute(sql, params)
+    }
+
     fn prepare(&self, sql: &str) -> Result<Statement<'_>, rusqlite::Error> {
         self.prepare(sql)
     }
@@ -75,50 +90,28 @@ pub trait DocumentStore<T>
 
 impl DocumentStore<Event> for Connection {
     fn list_documents(&self) -> Result<Vec<Event>, DataStoreError> {
-        let mut stmt = self.prepare(
-            "SELECT instant, location from office_location;",
-        )?;
-
-        let entries: Vec<Event> = stmt
-            .query_map(params![], FromRow::from_row)?
-            .filter(|x| x.is_ok())
-            .map(|x| x.unwrap())
-            .collect();
-
-        Ok(entries)
+        self.select("SELECT instant, location from office_location;", params![])
     }
 
     fn insert_document(&self, event: &Event) -> Result<(), DataStoreError> {
-        let count = self.execute(
+        self.replace_into(
             "REPLACE INTO office_location (instant, location) VALUES (?, ?);",
-            params![event.instant, event.location])?;
-
-        if count == 1 {
-            debug!("Successfully inserted location: {event:?} into database");
-            Ok(())
-        } else {
-            Err(UnexpectedRowCount(count, 1))
-        }
+            params![event.time, event.name])
     }
 }
 
 
 pub trait EventStore: DocumentStore<Event> {
-    fn add_current_event(&self, location: &String) -> Result<(), DataStoreError>;
-    fn list_events_group_by_date(&self, date: NaiveDate) -> Result<Vec<Event>, DataStoreError>;
     fn list_events(&self) -> Result<Vec<Event>, DataStoreError> {
         self.list_documents()
     }
     fn add_event(&self, event: &Event) -> Result<(), DataStoreError> {
         self.insert_document(event)
     }
-}
-
-impl EventStore for Connection {
     fn add_current_event(&self, location: &String) -> Result<(), DataStoreError> {
         self.insert_document(&Event {
-            instant: Utc::now(),
-            location: location.clone(),
+            time: Utc::now(),
+            name: location.clone(),
         })
     }
 
@@ -130,6 +123,9 @@ impl EventStore for Connection {
     }
 }
 
+impl<T: DocumentStore<Event>> EventStore for T {}
+
+
 pub trait FromRow
     where
         Self: Sized,
@@ -140,10 +136,41 @@ pub trait FromRow
 impl FromRow for Event {
     fn from_row(row: &Row) -> rusqlite::Result<Event> {
         Ok(Event {
-            instant: row.get(0)?,
-            location: row.get(1)?,
+            time: row.get("instant")?,
+            name: row.get("location")?,
         })
     }
 }
 
+impl DocumentStore<TimeEntry> for Connection {
+    fn list_documents(&self) -> Result<Vec<TimeEntry>, DataStoreError> {
+        self.select("SELECT id, description, start, stop, project_id, workspace_id from time_entries;", params![])
+    }
+
+    fn insert_document(&self, time_entry: &TimeEntry) -> Result<(), DataStoreError> {
+        self.replace_into(
+            "REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);",
+            params![
+                time_entry.id,
+                time_entry.description,
+                time_entry.start,
+                time_entry.stop,
+                time_entry.project_id,
+                time_entry.workspace_id
+            ])
+    }
+}
+
+impl FromRow for TimeEntry {
+    fn from_row(row: &Row) -> rusqlite::Result<TimeEntry> {
+        Ok(TimeEntry {
+            id: row.get("id")?,
+            description: row.get("description")?,
+            start: row.get("start")?,
+            stop: row.get("stop")?,
+            project_id: row.get("project_id")?,
+            workspace_id: row.get("workspace_id")?,
+        })
+    }
+}
 

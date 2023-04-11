@@ -7,8 +7,8 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Event {
-    pub instant: DateTime<Utc>,
-    pub location: String,
+    pub time: DateTime<Utc>,
+    pub name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,8 +32,8 @@ impl From<&Event> for Vec<cli_table::CellStruct> {
     fn from(office_location: &Event) -> Vec<cli_table::CellStruct> {
         use cli_table::Cell;
         vec![
-            office_location.instant.with_timezone(&Local).cell(),
-            office_location.location.clone().cell(),
+            office_location.time.with_timezone(&Local).cell(),
+            office_location.name.clone().cell(),
         ]
     }
 }

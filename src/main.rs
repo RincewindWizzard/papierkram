@@ -17,9 +17,9 @@ use rusqlite::Connection;
 use crate::args::{Args, EventCommand, ProbeCommand, TogglCommand};
 use crate::cli_calendar::calendar_table;
 use crate::config::{ApplicationConfig, Probe, Toggl};
-use crate::datastore::{connect_database, EventStore};
+use crate::datastore::{connect_database, DocumentStore, EventStore};
 use crate::dates::{parse_date_time};
-use crate::models::Event;
+use crate::models::{Event, TimeEntry};
 use crate::toggl::get_time_entries;
 
 
@@ -113,7 +113,15 @@ fn main() {
                             let result = get_time_entries(&toggl, &start, &end)
                                 .expect("Could not access the toggl API!");
 
-                            println!("{:?}", result);
+                            for time_entry in result {
+                                connection.insert_document(&time_entry)
+                                    .expect("Could not save time entry!");
+                            }
+
+                            for time_entry in connection.list_documents().expect("Cannot list time entries!") {
+                                let foo: TimeEntry = time_entry;
+                                println!("{foo:?}");
+                            }
                         }
                     }
                 }
@@ -235,7 +243,7 @@ fn execute_calendar(connection: Connection, start: &Option<String>, end: &Option
                 .list_events_group_by_date(date)
                 .unwrap_or(vec![])
                 .iter()
-                .map(|office_location| office_location.location.clone())
+                .map(|office_location| office_location.name.clone())
                 .collect::<Vec<String>>()
                 .join(", ")
                 .cell()
@@ -260,8 +268,8 @@ fn execute_add(connection: Connection, date: &Option<String>, location: &String)
                 }
                 Ok(date) => {
                     let office_location = Event {
-                        instant: date.with_timezone(&Utc),
-                        location: location.clone(),
+                        time: date.with_timezone(&Utc),
+                        name: location.clone(),
                     };
                     connection.add_event(&office_location)
                         .expect("Could not add location!")
