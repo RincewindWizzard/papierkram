@@ -60,6 +60,7 @@ pub fn get_time_entries(
 
 fn value_as_time_entry(entry: &Value) -> Result<TimeEntry, TogglApiError> {
     let now = Utc::now().naive_utc();
+    
     Ok(TimeEntry {
         id: serde_json::from_value(entry["id"].clone())?,
         description: serde_json::from_value(entry["description"].clone())?,

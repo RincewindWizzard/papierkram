@@ -177,10 +177,11 @@ impl DocumentStore<TimeEntry> for Connection {
 
     fn insert_documents(&mut self, docs: &Vec<TimeEntry>) -> Result<(), DataStoreError> {
         let tx = self.transaction()?;
-        let mut stmt = self.prepare("REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);")?;
 
-        let errors: Vec<DataStoreError> = docs.iter()
-            .map(|time_entry| stmt.execute(params![
+        {
+            let mut stmt = tx.prepare("REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);")?;
+            let errors: Vec<DataStoreError> = docs.iter()
+                .map(|time_entry| stmt.execute(params![
                 time_entry.id,
                 time_entry.description,
                 time_entry.start,
@@ -188,11 +189,11 @@ impl DocumentStore<TimeEntry> for Connection {
                 time_entry.project_id,
                 time_entry.workspace_id
             ]))
-            .filter(|x| x.is_err())
-            .map(|result| result.err().unwrap())
-            .map(|e| DataStoreError::from(e))
-            .collect();
-
+                .filter(|x| x.is_err())
+                .map(|result| result.err().unwrap())
+                .map(|e| DataStoreError::from(e))
+                .collect();
+        }
         match tx.commit() {
             Ok(_) => { Ok(()) }
             Err(e) => { Err(DataStoreError::SqliteError(e)) }
