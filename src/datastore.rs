@@ -16,6 +16,8 @@ pub enum DataStoreError {
     Unknown,
     #[error("Statement affected {0} rows instead of expected {1}")]
     UnexpectedRowCount(usize, usize),
+    #[error("Multiple")]
+    Multiple(Vec<DataStoreError>),
 }
 
 
@@ -86,6 +88,19 @@ pub trait DocumentStore<T>
 {
     fn list_documents(&self) -> Result<Vec<T>, DataStoreError>;
     fn insert_document(&self, doc: &T) -> Result<(), DataStoreError>;
+    fn insert_documents(&mut self, docs: &Vec<T>) -> Result<(), DataStoreError> {
+        let errors: Vec<DataStoreError> = docs.iter()
+            .map(|doc| self.insert_document(doc))
+            .filter(|x| x.is_err())
+            .map(|result| result.err().unwrap())
+            .collect();
+
+        if errors.len() > 0 {
+            Err(DataStoreError::Multiple(errors))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl DocumentStore<Event> for Connection {
@@ -158,6 +173,30 @@ impl DocumentStore<TimeEntry> for Connection {
                 time_entry.project_id,
                 time_entry.workspace_id
             ])
+    }
+
+    fn insert_documents(&mut self, docs: &Vec<TimeEntry>) -> Result<(), DataStoreError> {
+        let tx = self.transaction()?;
+        let mut stmt = self.prepare("REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);")?;
+
+        let errors: Vec<DataStoreError> = docs.iter()
+            .map(|time_entry| stmt.execute(params![
+                time_entry.id,
+                time_entry.description,
+                time_entry.start,
+                time_entry.stop,
+                time_entry.project_id,
+                time_entry.workspace_id
+            ]))
+            .filter(|x| x.is_err())
+            .map(|result| result.err().unwrap())
+            .map(|e| DataStoreError::from(e))
+            .collect();
+
+        match tx.commit() {
+            Ok(_) => { Ok(()) }
+            Err(e) => { Err(DataStoreError::SqliteError(e)) }
+        }
     }
 }
 

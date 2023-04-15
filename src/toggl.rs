@@ -49,15 +49,7 @@ pub fn get_time_entries(
 
     let time_entries: Vec<TimeEntry> = serde_json::from_str::<Vec<Value>>(&response)?
         .iter()
-        .map(|x| {
-            debug!("{:?}", x);
-            x
-        })
         .map(value_as_time_entry)
-        .map(|x| {
-            debug!("{:?}", x);
-            x
-        })
         .filter(|x| x.is_ok())
         .map(|x| x.unwrap())
         .collect();

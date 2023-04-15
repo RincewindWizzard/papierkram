@@ -37,7 +37,7 @@ fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
         .module(module_path!())
         .quiet(args.quiet)
         .verbosity(args.verbose as usize + 1) // show warnings and above
-        .timestamp(stderrlog::Timestamp::Off)
+        .timestamp(stderrlog::Timestamp::Millisecond)
         .init()
 }
 
@@ -110,13 +110,22 @@ fn main() {
                             let now = Utc::now().date_naive();
                             let start = now - Duration::weeks(9);
                             let end = now + Duration::days(1);
-                            let result = get_time_entries(&toggl, &start, &end)
+                            let mut result = get_time_entries(&toggl, &start, &end)
                                 .expect("Could not access the toggl API!");
 
-                            for time_entry in result {
-                                connection.insert_document(&time_entry)
-                                    .expect("Could not save time entry!");
+                            debug!("Got all time entries!");
+
+                            // TODO: remove this test higher load
+                            for i in (0..1000) {
+                                result.push(result[0].clone());
                             }
+
+
+                            connection.insert_documents(&result)
+                                .expect("Could not save time entry!");
+
+
+                            debug!("Saved all time entries!");
 
                             for time_entry in connection.list_documents().expect("Cannot list time entries!") {
                                 let foo: TimeEntry = time_entry;
@@ -189,8 +198,11 @@ fn execute_import(_config: ApplicationConfig, connection: Connection) {
 fn execute_detect(config: ApplicationConfig, connection: Connection) {
     use std::process::Command;
     let mut results = Vec::new();
+
+
     for (name, probe) in config.probes {
         debug!("Running {name}: {}", probe.command);
+
 
         let result = Command::new("sh")
             .arg("-c")
