@@ -49,3 +49,8 @@ pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
         println!("{foo:?}");
     }
 }
+
+fn time_report(connection: &Connection) {
+
+}
+
