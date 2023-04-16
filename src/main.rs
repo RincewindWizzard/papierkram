@@ -17,7 +17,7 @@ use rusqlite::Connection;
 use crate::args::{Args, EventCommand, ProbeCommand, TogglCommand};
 use crate::cli_calendar::calendar_table;
 use crate::config::{ApplicationConfig, Probe, Toggl};
-use crate::datastore::{connect_database, DocumentStore, EventStore};
+use crate::datastore::DataStore;
 use crate::dates::{parse_date_time};
 use crate::models::{Event, TimeEntry};
 use crate::toggl::get_time_entries;
@@ -31,7 +31,6 @@ mod dates;
 mod cli_calendar;
 mod toggl;
 mod commands;
-mod generic_datastore;
 mod duration_newtype;
 
 
@@ -58,7 +57,7 @@ fn main() {
         return;
     }
 
-    let mut connection = connect_database(&config).expect("Could not connect to Database!");
+    let mut connection = Connection::connect_database(&config).expect("Could not connect to Database!");
 
     match &args.command {
         Commands::Event { sub_command } => {

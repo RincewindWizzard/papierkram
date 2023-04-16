@@ -1,9 +1,10 @@
 use log::debug;
 use rusqlite::Connection;
 use crate::config::ApplicationConfig;
-use crate::datastore::EventStore;
+use crate::datastore::DataStore;
 
-pub fn main(config: ApplicationConfig, connection: Connection) {
+
+pub fn main(config: ApplicationConfig, mut connection: Connection) {
     use std::process::Command;
     let mut results = Vec::new();
 
@@ -21,7 +22,7 @@ pub fn main(config: ApplicationConfig, connection: Connection) {
             .success();
 
         if result {
-            results.push(connection.add_current_event(&name));
+            results.push(connection.insert_current_event(&name));
             println!("Detected {}", name);
         } else {
             debug!("{name} was not detected.");

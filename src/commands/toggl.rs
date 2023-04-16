@@ -3,7 +3,8 @@ use log::{debug, error};
 use rusqlite::Connection;
 use crate::config;
 use crate::config::{ApplicationConfig, Toggl};
-use crate::datastore::DocumentStore;
+use crate::datastore::DataStore;
+
 use crate::models::TimeEntry;
 use crate::toggl::get_time_entries;
 
@@ -38,19 +39,17 @@ pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
     }
 
 
-    connection.insert_documents(&result)
+    connection.insert_time_entries(&result)
         .expect("Could not save time entry!");
 
 
     debug!("Saved all time entries!");
 
-    for time_entry in connection.list_documents().expect("Cannot list time entries!") {
+    for time_entry in connection.list_time_entries().expect("Cannot list time entries!") {
         let foo: TimeEntry = time_entry;
         println!("{foo:?}");
     }
 }
 
-fn time_report(connection: &Connection) {
-
-}
+fn time_report(connection: &Connection) {}
 
