@@ -1,5 +1,5 @@
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use log::debug;
+use chrono::{DateTime, NaiveDate, Utc};
+
 use serde_json::Value;
 use crate::config::Toggl;
 use crate::models::TimeEntry;
@@ -50,8 +50,7 @@ pub fn get_time_entries(
     let time_entries: Vec<TimeEntry> = serde_json::from_str::<Vec<Value>>(&response)?
         .iter()
         .map(value_as_time_entry)
-        .filter(|x| x.is_ok())
-        .map(|x| x.unwrap())
+        .filter_map(|x| x.ok())
         .collect();
 
 
@@ -59,7 +58,7 @@ pub fn get_time_entries(
 }
 
 fn value_as_time_entry(entry: &Value) -> Result<TimeEntry, TogglApiError> {
-    let now = Utc::now().naive_utc();
+    let _now = Utc::now().naive_utc();
     
     Ok(TimeEntry {
         id: serde_json::from_value(entry["id"].clone())?,

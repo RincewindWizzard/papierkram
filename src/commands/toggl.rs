@@ -28,13 +28,13 @@ pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
     let now = Utc::now().date_naive();
     let start = now - Duration::weeks(9);
     let end = now + Duration::days(1);
-    let mut result = get_time_entries(&toggl, &start, &end)
+    let mut result = get_time_entries(toggl, &start, &end)
         .expect("Could not access the toggl API!");
 
     debug!("Got all time entries!");
 
     // TODO: remove this test higher load
-    for i in (0..1000) {
+    for _i in 0..1000 {
         result.push(result[0].clone());
     }
 
@@ -51,5 +51,5 @@ pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
     }
 }
 
-fn time_report(connection: &Connection) {}
+fn time_report(_connection: &Connection) {}
 

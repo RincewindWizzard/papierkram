@@ -74,7 +74,7 @@ pub fn execute_import(_config: ApplicationConfig, mut connection: Connection) {
 }
 
 
-pub fn execute_calendar(mut connection: Connection, start: &Option<String>, end: &Option<String>) {
+pub fn execute_calendar(_connection: Connection, start: &Option<String>, end: &Option<String>) {
     use cli_table::Cell;
     let end = end.as_ref()
         .map(parse_date_time)
@@ -93,7 +93,7 @@ pub fn execute_calendar(mut connection: Connection, start: &Option<String>, end:
         .and_then(|x| x.ok())
         .unwrap_or(start_of_year);
 
-    let (start, end) = (min(start, end), max(start, end));
+    let (_start, _end) = (min(start, end), max(start, end));
 
     todo!("Hier muss noch die Datenbankabfrage angepasst werden!");
     let table = calendar_table(

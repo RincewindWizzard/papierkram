@@ -1,10 +1,10 @@
 use thiserror::Error;
 use std::collections::HashMap;
-use std::io;
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+
+use chrono::{Duration, NaiveDate, Utc};
 use log::debug;
-use rusqlite::{Connection, Params, params, Row, ToSql, Transaction};
-use rusqlite::types::FromSql;
+use rusqlite::{Connection, Params, params, Row};
+
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStoreError::FileSystem;
 
@@ -124,13 +124,11 @@ impl DataStore for Connection {
         {
             let mut stmt = tx.prepare(sql)?;
 
-            let errors: Vec<rusqlite::Error> = docs
+            let _errors: Vec<rusqlite::Error> = docs
                 .iter()
                 .map(to_row)
                 .map(|params| stmt.execute(params))
-                .map(|result| result.err())
-                .filter(|o| o.is_some())
-                .map(|o| o.unwrap())
+                .filter_map(|result| result.err())
                 .collect();
         }
         tx.commit()?;
@@ -153,7 +151,7 @@ impl DataStore for Connection {
             "REPLACE INTO office_location (instant, location) VALUES (?, ?);",
             events,
             |event| (
-                event.time.clone(),
+                event.time,
                 event.name.clone()
             ),
         )
@@ -168,12 +166,12 @@ impl DataStore for Connection {
             "REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);",
             time_entries,
             |time_entry| (
-                time_entry.id.clone(),
+                time_entry.id,
                 time_entry.description.clone(),
-                time_entry.start.clone(),
-                time_entry.stop.clone(),
-                time_entry.project_id.clone(),
-                time_entry.workspace_id.clone()
+                time_entry.start,
+                time_entry.stop,
+                time_entry.project_id,
+                time_entry.workspace_id
             ),
         )
     }
@@ -183,7 +181,7 @@ impl DataStore for Connection {
             "REPLACE INTO expected_duration (date, duration) VALUES (?, ?);",
             &vec![expected_duration],
             |expected_duration| (
-                expected_duration.date.clone(),
+                expected_duration.date,
                 expected_duration.duration.clone(),
             ),
         )
@@ -194,7 +192,7 @@ impl DataStore for Connection {
             "INSERT OR IGNORE into expected_duration select DATE(start) as date, ? as duration FROM time_entries GROUP BY DATE(start);",
             &vec![default],
             |duration| (
-                duration.num_seconds().clone(),
+                duration.num_seconds(),
             ),
         )
     }
@@ -275,7 +273,7 @@ impl DataStore for Connection {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
+    use chrono::{Duration, NaiveDate, Utc};
     use rusqlite::Connection;
     use crate::datastore::{DataStore};
     use crate::models::TimeEntry;

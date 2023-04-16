@@ -1,26 +1,26 @@
 //! A useful tool to help you doing less paperwork while working.
 //! Currently only auto detection of workplace (remote, at-site) is supported.
 
-use std::cmp::{max, min};
-use std::collections::HashMap;
-use std::io;
 
 
-use chrono::{Datelike, Duration, NaiveDate, NaiveTime, TimeZone, Utc};
+
+
+
+use chrono::{TimeZone};
 use clap::Parser;
-use confy::ConfyError;
 
 
-use log::{debug, error, SetLoggerError, warn};
+
+use log::{error, SetLoggerError, warn};
 use rusqlite::Connection;
 
-use crate::args::{Args, EventCommand, ProbeCommand, TogglCommand};
-use crate::cli_calendar::calendar_table;
-use crate::config::{ApplicationConfig, Probe, Toggl};
+use crate::args::{Args, EventCommand, TogglCommand};
+
+use crate::config::{ApplicationConfig};
 use crate::datastore::DataStore;
-use crate::dates::{parse_date_time};
-use crate::models::{Event, TimeEntry};
-use crate::toggl::get_time_entries;
+
+
+
 
 
 mod models;
