@@ -10,15 +10,6 @@ use crate::models::{Event, ExpectedDuration, TimeEntry, TimeSheet};
 type Result<T> = anyhow::Result<T, anyhow::Error>;
 
 
-pub trait DocumentStore<K, V>
-    where
-        K: ToSql,
-        V: ToSql + FromSql
-{
-    fn put(&mut self, key: K, value: V);
-    fn get(&self, key: &K) -> Option<V>;
-}
-
 pub trait TransactionSupplier {
     fn new_transaction(&mut self) -> rusqlite::Result<rusqlite::Transaction<'_>>;
 }
@@ -41,9 +32,9 @@ pub trait DataStore
             P: Params;
 
     /// Inserts a Vector of Documents into a table using the sql statement and the function to_row
-    fn insert_query<T, F, P>(&mut self, sql: &str, docs: Vec<T>, to_row: F) -> Result<()>
+    fn insert_query<'a, T, F, P>(&mut self, sql: &str, docs: &'a Vec<T>, to_row: F) -> Result<()>
         where
-            F: Fn(&T) -> P,
+            F: Fn(&'a T) -> P,
             P: Params;
 
 
@@ -55,7 +46,7 @@ pub trait DataStore
 
     /// inserts the default expected duration for every date where a time entry exists
     /// but no expected duration ist given.
-    fn insert_default_expected_duration(&mut self, default: ExpectedDuration);
+    fn insert_default_expected_duration(&mut self, default: Duration) -> Result<()>;
 
     /// lists all events sorted by date ASC
     fn list_events(&mut self) -> Result<Vec<Event>>;
@@ -94,9 +85,9 @@ impl DataStore for Connection {
         Ok(result)
     }
 
-    fn insert_query<T, F, P>(&mut self, sql: &str, docs: Vec<T>, to_row: F) -> Result<()>
+    fn insert_query<'a, T, F, P>(&mut self, sql: &str, docs: &'a Vec<T>, to_row: F) -> Result<()>
         where
-            F: Fn(&T) -> P,
+            F: Fn(&'a T) -> P,
             P: Params
     {
         let tx = self.transaction()?;
@@ -121,23 +112,54 @@ impl DataStore for Connection {
     }
 
     fn insert_events(&mut self, events: &Vec<Event>) -> Result<()> {
-        todo!()
+        self.insert_query(
+            "REPLACE INTO office_location (instant, location) VALUES (?, ?);",
+            events,
+            |event| (
+                event.time.clone(),
+                event.name.clone()
+            ),
+        )
     }
 
     fn insert_time_entry(&mut self, time_entry: &TimeEntry) -> Result<()> {
         self.insert_time_entries(&vec![time_entry.clone()])
     }
 
-    fn insert_time_entries(&mut self, time_entry: &Vec<TimeEntry>) -> Result<()> {
-        todo!()
+    fn insert_time_entries(&mut self, time_entries: &Vec<TimeEntry>) -> Result<()> {
+        self.insert_query(
+            "REPLACE INTO time_entries (id, description, start, stop, project_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?);",
+            time_entries,
+            |time_entry| (
+                time_entry.id.clone(),
+                time_entry.description.clone(),
+                time_entry.start.clone(),
+                time_entry.stop.clone(),
+                time_entry.project_id.clone(),
+                time_entry.workspace_id.clone()
+            ),
+        )
     }
 
     fn insert_expected_duration(&mut self, expected_duration: ExpectedDuration) -> Result<()> {
-        todo!()
+        self.insert_query(
+            "REPLACE INTO expected_duration (date, duration) VALUES (?, ?);",
+            &vec![expected_duration],
+            |expected_duration| (
+                expected_duration.date.clone(),
+                expected_duration.duration.clone(),
+            ),
+        )
     }
 
-    fn insert_default_expected_duration(&mut self, default: ExpectedDuration) {
-        todo!()
+    fn insert_default_expected_duration(&mut self, default: Duration) -> Result<()> {
+        self.insert_query(
+            "INSERT OR IGNORE into expected_duration select DATE(start) as date, ? as duration FROM time_entries GROUP BY DATE(start);",
+            &vec![default],
+            |duration| (
+                duration.num_seconds().clone(),
+            ),
+        )
     }
 
     fn list_events(&mut self) -> Result<Vec<Event>> {
@@ -186,45 +208,53 @@ impl DataStore for Connection {
     }
 
     fn view_timesheet(&mut self) -> Result<TimeSheet> {
-        todo!()
+        self.view_query(
+            include_str!("sql/select_report.sql"),
+            params![],
+            |row| Ok(crate::models::TimeSheetRow {
+                date: row.get("date")?,
+                actual_duration: row.get("actual_duration")?,
+                expected_duration: row.get("expected_duration")?,
+                delta: row.get("delta")?,
+                saldo: row.get("saldo")?,
+                normalized_start_of_business: row.get("normalized_start_of_business")?,
+                normalized_end_of_business: row.get("normalized_end_of_business")?,
+            }),
+        )
     }
 }
 
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use std::collections::HashMap;
-    use chrono::{Duration, NaiveDate};
-    use crate::generic_datastore::DocumentStore;
-
-    struct FooStore {
-        map: HashMap<NaiveDate, u64>,
-    }
-
-    impl DocumentStore<NaiveDate, u64> for FooStore {
-        fn put(&mut self, key: NaiveDate, value: u64) {
-            self.map.insert(key, value);
-        }
-
-        fn get(&self, key: &NaiveDate) -> Option<u64> {
-            self.map.get(key).cloned()
-        }
-    }
+    use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
+    use rusqlite::Connection;
+    use crate::datastore::DocumentStore;
+    use crate::generic_datastore::DataStore;
+    use crate::models::TimeEntry;
 
     #[test]
-    fn test_key_value_store() {
-        let mut store = FooStore {
-            map: HashMap::new(),
-        };
+    fn test_format() {
+        let mut connection = Connection::open_in_memory().unwrap();
+        connection.execute_batch(include_str!("sql/create_tables.sql")).unwrap();
 
-        let date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
-
-        for i in 1..10 {
-            let current_date = date + Duration::days(i);
-            store.put(current_date, i as u64);
-            let result = store.get(&current_date).unwrap();
-            assert_eq!(i as u64, result);
+        let begin = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        for id in 0..10 {
+            let day = begin + Duration::days(id);
+            let time_entry = TimeEntry {
+                id,
+                description: None,
+                start: day.and_hms_opt(8, 0, 0).unwrap().and_local_timezone(Utc).unwrap(),
+                stop: Some(day.and_hms_opt(12, 0, 0).unwrap().and_local_timezone(Utc).unwrap()),
+                project_id: None,
+                workspace_id: None,
+            };
+            connection.insert_time_entry(&time_entry).unwrap();
         }
+        connection.insert_default_expected_duration(Duration::seconds(42)).unwrap();
+        assert_eq!(10, connection.list_time_entries().unwrap().len());
+        assert_eq!(9, connection.view_timesheet().unwrap().len());
+
+        println!("{:?}", connection.view_timesheet().unwrap());
     }
 }

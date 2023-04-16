@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS time_entries (
   workspace_id INTEGER
 );
 
-CREATE TABLE IF NOT EXISTS expected_time (
+CREATE TABLE IF NOT EXISTS expected_duration (
   date DATETIME PRIMARY KEY NOT NULL,
   duration INTEGER NOT NULL
 );

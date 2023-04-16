@@ -16,8 +16,8 @@ WITH
         SELECT
             worked_time_per_day.date as date,
             actual_duration,
-            expected_time.duration AS expected_duration,
-            (actual_duration - expected_time.duration) AS delta,
+            expected_duration.duration AS expected_duration,
+            (actual_duration - expected_duration.duration) AS delta,
 
             -- beginning of the 'typical' workday
             "08:00:00" as normalized_start_of_business,
@@ -30,8 +30,8 @@ WITH
                 END,
             'unixepoch') as normalized_end_of_business
         FROM worked_time_per_day
-        LEFT JOIN expected_time
-        ON worked_time_per_day.date = expected_time.date
+        LEFT JOIN expected_duration
+        ON worked_time_per_day.date = expected_duration.date
     )
 SELECT
     date,
