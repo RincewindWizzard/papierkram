@@ -1,16 +1,37 @@
 use std::ops::Deref;
-use chrono::{Duration, Utc};
+use chrono::{Duration, NaiveDate, Utc};
 use cli_table::{Cell, CellStruct, Style, Table, TableStruct, WithTitle};
 use cli_table::format::{Border, HorizontalLine, Separator, VerticalLine};
 use log::{debug, error};
 use rusqlite::Connection;
+use crate::args::{Args, TogglCommand};
 use crate::config;
 use crate::config::{ApplicationConfig, Toggl};
 use crate::datastore::DataStore;
+use crate::dates::parse_time_interval;
 
 use crate::models::{TimeEntry, TimeSheet, TimeSheetRow};
 use crate::toggl::get_time_entries;
 use crate::table_cli_helper::TableFormatter;
+
+pub fn main(config: &mut ApplicationConfig, command: &crate::args::TogglCommand, connection: &mut Connection) {
+    match command {
+        TogglCommand::Token { token } => {
+            crate::commands::toggl::execute_token(config, token);
+        }
+        TogglCommand::Show { compact, start, end } => {
+            match &config.toggl {
+                None => {
+                    error!("There is no toggl access configured!")
+                }
+                Some(toggl) => {
+                    let (start, end) = parse_time_interval(start, end);
+                    execute_show(toggl, connection, *compact, start.date_naive(), end.date_naive());
+                }
+            }
+        }
+    }
+}
 
 pub fn execute_token(config: &mut ApplicationConfig, token: &String) {
     // TODO: might override future attributes
@@ -28,7 +49,13 @@ pub fn execute_token(config: &mut ApplicationConfig, token: &String) {
     }
 }
 
-pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
+pub fn execute_show(
+    toggl: &crate::config::Toggl,
+    connection: &mut Connection,
+    compact: bool,
+    show_start: NaiveDate,
+    show_stop: NaiveDate)
+{
     let now = Utc::now().date_naive();
     let start = now - Duration::weeks(9);
     let end = now + Duration::days(1);
@@ -43,7 +70,11 @@ pub fn execute_show(toggl: &Toggl, connection: &mut Connection) {
     debug!("Saved all time entries!");
     connection.insert_default_expected_duration(Duration::seconds(5));
 
-    let timesheet = connection.view_full_timesheet().unwrap();
+    let timesheet = if compact {
+        connection.view_timesheet(show_start, show_stop)
+    } else {
+        connection.view_full_timesheet(show_start, show_stop)
+    }.unwrap();
 
     let vertical_line = VerticalLine::new('│');
 

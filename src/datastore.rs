@@ -65,11 +65,11 @@ pub trait DataStore {
     fn view_events_where_date_eq(&mut self, date: NaiveDate) -> Result<Vec<Event>>;
 
     /// returns the timesheet with all necessary information
-    fn view_timesheet(&mut self) -> Result<TimeSheet>;
+    fn view_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet>;
 
     /// returns the timesheet with all necessary information
     /// includes weekends and holidays
-    fn view_full_timesheet(&mut self) -> Result<TimeSheet>;
+    fn view_full_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet>;
 }
 
 
@@ -257,10 +257,10 @@ impl DataStore for Connection {
         )
     }
 
-    fn view_timesheet(&mut self) -> Result<TimeSheet> {
+    fn view_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
         let timesheet = self.view_query(
             include_str!("sql/select_report.sql"),
-            params![],
+            params![start, end],
             |row| Ok(crate::models::TimeSheetRow {
                 date: row.get("date")?,
                 actual_duration: row.get("actual_duration")?,
@@ -275,8 +275,8 @@ impl DataStore for Connection {
         Ok(timesheet)
     }
 
-    fn view_full_timesheet(&mut self) -> Result<TimeSheet> {
-        let timesheet = self.view_timesheet()?;
+    fn view_full_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
+        let timesheet = self.view_timesheet(start, end)?;
 
         let start = timesheet[0].date;
         let end = timesheet.last().unwrap().date + Duration::days(1);

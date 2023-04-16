@@ -1,7 +1,40 @@
-use chrono::{NaiveTime, Timelike};
+use chrono::{Datelike, NaiveDate, NaiveTime, Timelike, Weekday};
 use cli_table::{Cell, Color, Style, TableStruct};
 use cli_table::format::{Border, HorizontalLine, Separator, VerticalLine};
 use crate::duration_newtype::Duration;
+
+pub fn cell_style_naive_date(cell: cli_table::CellStruct, value: &NaiveDate) -> cli_table::CellStruct {
+    let color = match value.weekday() {
+        Weekday::Mon => {
+            None
+        }
+        Weekday::Tue => {
+            None
+        }
+        Weekday::Wed => {
+            None
+        }
+        Weekday::Thu => {
+            None
+        }
+        Weekday::Fri => {
+            None
+        }
+        Weekday::Sat => {
+            Some(Color::Yellow)
+        }
+        Weekday::Sun => {
+            Some(Color::Yellow)
+        }
+    };
+
+    if value.day0() == 0 {
+        cell.bold(true)
+    } else {
+        cell
+    }.foreground_color(color)
+}
+
 
 pub fn cell_style_duration_unsigned(cell: cli_table::CellStruct, value: &Duration) -> cli_table::CellStruct {
     if value.chrono_duration.num_seconds() != 0 {

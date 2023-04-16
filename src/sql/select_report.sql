@@ -44,6 +44,7 @@ SELECT
     normalized_start_of_business,
     normalized_end_of_business
 FROM timesheet_delta AS timesheet
+WHERE timesheet.date BETWEEN ? AND ?
 ORDER BY timesheet.date;
 
 

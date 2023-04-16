@@ -69,6 +69,12 @@ pub enum TogglCommand {
     Show {
         #[arg(short, long)]
         compact: bool,
+
+        /// begin of the timesheet
+        start: Option<String>,
+        /// end of the timesheet.
+        /// leave blank for today
+        end: Option<String>,
     },
 }
 

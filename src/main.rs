@@ -10,7 +10,6 @@ use chrono::{TimeZone};
 use clap::Parser;
 
 
-
 use log::{error, SetLoggerError, warn};
 use rusqlite::Connection;
 
@@ -18,9 +17,6 @@ use crate::args::{Args, EventCommand, TogglCommand};
 
 use crate::config::{ApplicationConfig};
 use crate::datastore::DataStore;
-
-
-
 
 
 mod models;
@@ -88,21 +84,7 @@ fn main() {
         }
         Commands::Clear { .. } => {}
         Commands::Toggl { sub_command } => {
-            match sub_command {
-                TogglCommand::Token { token } => {
-                    crate::commands::toggl::execute_token(&mut config, token);
-                }
-                TogglCommand::Show { .. } => {
-                    match config.toggl {
-                        None => {
-                            error!("There is no toggl access configured!")
-                        }
-                        Some(toggl) => {
-                            crate::commands::toggl::execute_show(&toggl, &mut connection);
-                        }
-                    }
-                }
-            }
+            crate::commands::toggl::main(&mut config, sub_command, &mut connection);
         }
         Commands::Config { .. } => {
             let toml = toml::to_string(&config);

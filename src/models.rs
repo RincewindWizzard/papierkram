@@ -5,7 +5,7 @@ use cli_table::{Cell, Color, format::Justify, print_stdout, Style, Table, WithTi
 
 use serde_derive::{Deserialize, Serialize};
 use crate::duration_newtype::Duration;
-use crate::table_cli_helper::{empty_if_duration_null, empty_if_time_null, cell_style_duration_unsigned, cell_style_duration_signed};
+use crate::table_cli_helper::{empty_if_duration_null, empty_if_time_null, cell_style_duration_unsigned, cell_style_duration_signed, cell_style_naive_date};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Event {
@@ -37,7 +37,7 @@ pub(crate) type TimeSheet = Vec<TimeSheetRow>;
 
 #[derive(Table, Debug, Serialize, Deserialize, Clone)]
 pub struct TimeSheetRow {
-    #[table(title = "Date", justify = "Justify::Left")]
+    #[table(title = "Date", justify = "Justify::Left", customize_fn = "cell_style_naive_date")]
     pub date: NaiveDate,
 
     #[table(title = "Actual", justify = "Justify::Right", customize_fn = "cell_style_duration_unsigned")]
