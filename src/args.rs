@@ -76,6 +76,10 @@ pub enum TogglCommand {
         /// leave blank for today
         end: Option<String>,
     },
+
+    Export {
+
+    },
 }
 
 #[derive(Debug, Subcommand)]

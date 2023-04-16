@@ -74,6 +74,9 @@ pub trait DataStore {
     /// returns the timesheet with all necessary information
     /// includes weekends and holidays
     fn view_full_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet>;
+
+
+    fn view_timesheet_export(&mut self) -> Result<TimeSheet>;
 }
 
 
@@ -311,6 +314,24 @@ impl DataStore for Connection {
             }
         }
         Ok(full_timesheet)
+    }
+
+    fn view_timesheet_export(&mut self) -> Result<TimeSheet> {
+        let timesheet = self.view_query(
+            include_str!("sql/select_report_export.sql"),
+            params![],
+            |row| Ok(crate::models::TimeSheetRow {
+                date: row.get("date")?,
+                actual_duration: row.get("actual_duration")?,
+                expected_duration: row.get("expected_duration")?,
+                delta: row.get("delta")?,
+                saldo: row.get("saldo")?,
+                normalized_start_of_business: row.get("normalized_start_of_business")?,
+                normalized_end_of_business: row.get("normalized_end_of_business")?,
+            }),
+        )?;
+
+        Ok(timesheet)
     }
 }
 

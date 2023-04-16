@@ -30,6 +30,11 @@ pub fn main(config: &mut ApplicationConfig, command: &crate::args::TogglCommand,
                 }
             }
         }
+        TogglCommand::Export { .. } => {
+            let timesheet = connection.view_timesheet_export().unwrap();
+            let json = serde_json::to_string_pretty(&timesheet).expect("Could not serialize to json!");
+            println!("{}", json);
+        }
     }
 }
 
