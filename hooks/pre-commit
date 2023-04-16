@@ -1,2 +1,2 @@
 cargo bump
-git add Cargo.toml
+git add Cargo.toml  Cargo.lock
