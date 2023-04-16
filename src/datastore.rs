@@ -1,5 +1,6 @@
 use thiserror::Error;
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use chrono::{Duration, NaiveDate, Utc};
 use log::debug;
@@ -63,6 +64,9 @@ pub trait DataStore {
     fn view_event_by_date(&mut self) -> Result<HashMap<NaiveDate, Vec<Event>>>;
 
     fn view_events_where_date_eq(&mut self, date: NaiveDate) -> Result<Vec<Event>>;
+
+    // view all known event names
+    fn view_event_names(&mut self) -> Result<Vec<String>>;
 
     /// returns the timesheet with all necessary information
     fn view_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet>;
@@ -243,7 +247,13 @@ impl DataStore for Connection {
     }
 
     fn view_event_by_date(&mut self) -> Result<HashMap<NaiveDate, Vec<Event>>> {
-        todo!()
+        let events = self.list_events()?;
+        let mut map = HashMap::new();
+        for event in events {
+            let date = event.time.date_naive();
+            map.entry(date).or_insert(vec![event]);
+        }
+        Ok(map)
     }
 
     fn view_events_where_date_eq(&mut self, date: NaiveDate) -> Result<Vec<Event>> {
@@ -254,6 +264,14 @@ impl DataStore for Connection {
                 time: row.get("instant")?,
                 name: row.get("location")?,
             }),
+        )
+    }
+
+    fn view_event_names(&mut self) -> Result<Vec<String>> {
+        self.view_query(
+            "select DISTINCT(location) as name from office_location;",
+            params![],
+            |row| Ok(row.get("name")?),
         )
     }
 

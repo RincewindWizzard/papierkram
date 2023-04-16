@@ -11,12 +11,18 @@ use serde_derive::{Deserialize, Serialize};
 pub struct ApplicationConfig {
     pub probes: HashMap<String, Probe>,
     pub toggl: Option<Toggl>,
+    pub workweek: WorkWeek,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Toggl {
     pub username: String,
-    pub password: String,
+    pub password: String
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct WorkWeek {
+    pub default_expected_duration_seconds: u64
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

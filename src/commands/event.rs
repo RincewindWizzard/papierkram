@@ -74,25 +74,17 @@ pub fn execute_import(_config: ApplicationConfig, mut connection: Connection) {
 }
 
 
-pub fn execute_calendar(_connection: Connection, start: &Option<String>, end: &Option<String>) {
+pub fn execute_calendar(mut connection: Connection, start: &Option<String>, end: &Option<String>) {
     use cli_table::Cell;
     let (start, end) = parse_time_interval(start, end);
 
-    todo!("Hier muss noch die Datenbankabfrage angepasst werden!");
+    let events_per_date = connection.view_event_by_date().unwrap();
+    let column_max_len = connection.view_event_names().unwrap().join(", ").len();
     let table = calendar_table(
         start.date_naive(),
         end.date_naive(),
-        |date| date.cell(),
-        /*|date| {
-            connection
-                .view_events_where_date_eq(date)
-                .unwrap_or(vec![])
-                .iter()
-                .map(|office_location| office_location.name.clone())
-                .collect::<Vec<String>>()
-                .join(", ")
-                .cell()
-        },*/
+        events_per_date,
+        column_max_len,
     );
 
     assert!(cli_table::print_stdout(table).is_ok());

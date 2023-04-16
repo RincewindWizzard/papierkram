@@ -26,7 +26,7 @@ pub fn main(config: &mut ApplicationConfig, command: &crate::args::TogglCommand,
                 }
                 Some(toggl) => {
                     let (start, end) = parse_time_interval(start, end);
-                    execute_show(toggl, connection, *compact, start.date_naive(), end.date_naive());
+                    execute_show(config, connection, *compact, start.date_naive(), end.date_naive());
                 }
             }
         }
@@ -50,16 +50,17 @@ pub fn execute_token(config: &mut ApplicationConfig, token: &String) {
 }
 
 pub fn execute_show(
-    toggl: &crate::config::Toggl,
+    config: &ApplicationConfig,
     connection: &mut Connection,
     compact: bool,
     show_start: NaiveDate,
     show_stop: NaiveDate)
 {
+    let toggl = config.toggl.as_ref().unwrap();
     let now = Utc::now().date_naive();
     let start = now - Duration::weeks(9);
     let end = now + Duration::days(1);
-    let result = get_time_entries(toggl, &start, &end)
+    let result = get_time_entries(&toggl, &start, &end)
         .expect("Could not access the toggl API!");
 
     debug!("Got all time entries!");
@@ -68,7 +69,8 @@ pub fn execute_show(
         .expect("Could not save time entry!");
 
     debug!("Saved all time entries!");
-    connection.insert_default_expected_duration(Duration::seconds(5));
+    let default_expected = Duration::seconds(config.workweek.default_expected_duration_seconds as i64);
+    connection.insert_default_expected_duration(default_expected).unwrap();
 
     let timesheet = if compact {
         connection.view_timesheet(show_start, show_stop)
