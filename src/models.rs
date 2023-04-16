@@ -1,8 +1,13 @@
-use chrono::Duration;
+use std::fmt;
+use chrono::serde::ts_seconds;
+use chrono::{NaiveDate, NaiveTime};
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use rusqlite::Row;
+use serde::{de, Deserializer};
 
 
 use serde_derive::{Deserialize, Serialize};
+use crate::duration_newtype::Duration;
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -10,6 +15,15 @@ pub struct Event {
     pub time: DateTime<Utc>,
     pub name: String,
 }
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ExpectedDuration {
+    pub date: NaiveDate,
+
+    pub duration: Duration,
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimeEntry {
@@ -21,9 +35,29 @@ pub struct TimeEntry {
     pub workspace_id: Option<i64>,
 }
 
+pub(crate) type TimeSheet = Vec<TimeSheetRow>;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TimeSheetRow {
+    pub date: NaiveDate,
+
+    pub actual_duration: Duration,
+
+    pub expected_duration: Duration,
+
+    pub delta: Duration,
+
+    pub saldo: Duration,
+    pub normalized_start_of_business: NaiveTime,
+    pub normalized_end_of_business: NaiveTime,
+}
+
+
 impl TimeEntry {
     pub(crate) fn duration(&self) -> Option<Duration> {
-        self.stop.map(|stop| stop - self.start)
+        self.stop
+            .map(|stop| stop - self.start)
+            .map(Duration::of)
     }
 }
 
@@ -37,6 +71,7 @@ impl From<&Event> for Vec<cli_table::CellStruct> {
         ]
     }
 }
+
 
 
 

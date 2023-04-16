@@ -20,7 +20,7 @@ WITH
             (actual_duration - expected_time.duration) AS delta,
 
             -- beginning of the 'typical' workday
-            "08:00:00" as normalized_SOB,
+            "08:00:00" as normalized_start_of_business,
             -- if started at the 'typical' time, done the obligatory breaks, which time would we currently?
             -- 28800 is 08:00
             time(28800 + actual_duration  +
@@ -28,7 +28,7 @@ WITH
                     WHEN actual_duration > 21600  THEN 2700
                     ELSE 0
                 END,
-            'unixepoch') as normalized_EOB
+            'unixepoch') as normalized_end_of_business
         FROM worked_time_per_day
         LEFT JOIN expected_time
         ON worked_time_per_day.date = expected_time.date
@@ -41,8 +41,8 @@ SELECT
     ( -- sum all deltas before this date
         SELECT SUM(delta) FROM timesheet_delta AS saldo_table WHERE timesheet.date > saldo_table.date
     ) as saldo,
-    normalized_SOB,
-    normalized_EOB
+    normalized_start_of_business,
+    normalized_end_of_business
 FROM timesheet_delta AS timesheet
 ORDER BY timesheet.date;
 

@@ -1,6 +1,7 @@
-use chrono::{NaiveDate, Utc};
+use chrono::{Duration, NaiveDate, Utc};
 use log::debug;
-use rusqlite::{Connection, Error, params, Params, Row, Statement};
+use rusqlite::{Connection, Error, params, Params, Row, Statement, ToSql};
+use rusqlite::types::FromSql;
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStoreError::{Filesystem, UnexpectedRowCount};
 use crate::models::{Event, TimeEntry};
@@ -214,3 +215,45 @@ impl FromRow for TimeEntry {
     }
 }
 
+pub trait KeyValueStore<K, V>
+    where
+        K: ToSql,
+        V: ToSql + FromSql
+{
+    fn put(key: K, value: V);
+    fn get(key: K, value: V);
+}
+
+pub trait ExpectedTimeStore {
+    fn set_expected_time(&self, date: NaiveDate, duration: Duration);
+    fn get_expected_time(&self, date: NaiveDate) -> Option<Duration>;
+}
+
+/*
+#[cfg(test)]
+mod tests {
+    use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
+    use rusqlite::Connection;
+    use crate::datastore::DocumentStore;
+    use crate::models::TimeEntry;
+
+    #[test]
+    fn test_format() -> Result<(), AnyHo> {
+        let connection = Connection::open_in_memory()?;
+        connection.execute_batch(include_str!("sql/create_tables.sql"))?;
+
+        let begin = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        for id in 0..10 {
+            let day = begin + Duration::days(id);
+            let time_entry = TimeEntry {
+                id,
+                description: None,
+                start: day.and_hms_opt(8, 0, 0)?.and_local_timezone(Utc)?,
+                stop: Some(day.and_hms_opt(8, 0, 0)?.and_local_timezone(Utc)?),
+                project_id: None,
+                workspace_id: None,
+            };
+            connection.insert_document()?;
+        }
+    }
+}*/

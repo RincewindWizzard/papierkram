@@ -31,6 +31,8 @@ mod dates;
 mod cli_calendar;
 mod toggl;
 mod commands;
+mod generic_datastore;
+mod duration_newtype;
 
 
 fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
