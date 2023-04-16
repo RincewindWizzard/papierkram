@@ -1,4 +1,6 @@
 use std::fmt;
+use std::fmt::{Display, Formatter};
+use cli_table::{Cell, Color, Style};
 use rusqlite::ToSql;
 use rusqlite::types::{FromSql, FromSqlResult, ToSqlOutput, ValueRef};
 use serde::{de, Deserializer};
@@ -10,10 +12,50 @@ pub struct Duration {
 }
 
 impl Duration {
-    pub(crate) fn of(chrono_duration: chrono::Duration) -> Duration {
+    pub fn of(chrono_duration: chrono::Duration) -> Duration {
         Duration {
             chrono_duration,
         }
+    }
+
+    pub fn format_unsigned(&self) -> String {
+        let cdur = self.chrono_duration;
+        let seconds = cdur.num_seconds().rem_euclid(60).abs();
+        let minutes = cdur.num_minutes().rem_euclid(60).abs();
+        let hours = cdur.num_hours().abs();
+        format!("{hours:02}:{minutes:02}:{seconds:02}")
+    }
+
+    pub fn format_signed(&self) -> String {
+        let cdur = self.chrono_duration;
+        let sign = if cdur.num_seconds() < 0 {
+            "-"
+        } else if cdur.num_seconds() > 0 {
+            "+"
+        } else {
+            " "
+        };
+        let seconds = cdur.num_seconds().rem_euclid(60).abs();
+        let minutes = cdur.num_minutes().rem_euclid(60).abs();
+        let hours = cdur.num_hours().abs();
+        format!("{sign}{hours:02}:{minutes:02}:{seconds:02}")
+    }
+}
+
+impl Display for Duration {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let cdur = self.chrono_duration;
+        let sign = if cdur.num_seconds() < 0 {
+            "-"
+        } else if cdur.num_seconds() > 0 {
+            "+"
+        } else {
+            " "
+        };
+        let seconds = cdur.num_seconds().rem_euclid(60).abs();
+        let minutes = cdur.num_minutes().rem_euclid(60).abs();
+        let hours = cdur.num_hours().abs();
+        f.write_str(&format!("{sign}{hours:02}:{minutes:02}:{seconds:02}"))
     }
 }
 
@@ -79,3 +121,12 @@ impl ToSql for Duration {
         Ok(ToSqlOutput::from(self.chrono_duration.num_seconds()))
     }
 }
+
+impl Default for Duration {
+    fn default() -> Self {
+        Duration {
+            chrono_duration: chrono::Duration::zero(),
+        }
+    }
+}
+

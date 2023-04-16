@@ -32,6 +32,7 @@ mod cli_calendar;
 mod toggl;
 mod commands;
 mod duration_newtype;
+mod table_cli_helper;
 
 
 fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {

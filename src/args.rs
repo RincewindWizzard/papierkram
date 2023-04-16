@@ -66,7 +66,10 @@ pub enum TogglCommand {
         token: String,
     },
 
-    Show {},
+    Show {
+        #[arg(short, long)]
+        compact: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

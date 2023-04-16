@@ -66,6 +66,10 @@ pub trait DataStore {
 
     /// returns the timesheet with all necessary information
     fn view_timesheet(&mut self) -> Result<TimeSheet>;
+
+    /// returns the timesheet with all necessary information
+    /// includes weekends and holidays
+    fn view_full_timesheet(&mut self) -> Result<TimeSheet>;
 }
 
 
@@ -254,7 +258,7 @@ impl DataStore for Connection {
     }
 
     fn view_timesheet(&mut self) -> Result<TimeSheet> {
-        self.view_query(
+        let timesheet = self.view_query(
             include_str!("sql/select_report.sql"),
             params![],
             |row| Ok(crate::models::TimeSheetRow {
@@ -266,7 +270,29 @@ impl DataStore for Connection {
                 normalized_start_of_business: row.get("normalized_start_of_business")?,
                 normalized_end_of_business: row.get("normalized_end_of_business")?,
             }),
-        )
+        )?;
+
+        Ok(timesheet)
+    }
+
+    fn view_full_timesheet(&mut self) -> Result<TimeSheet> {
+        let timesheet = self.view_timesheet()?;
+
+        let start = timesheet[0].date;
+        let end = timesheet.last().unwrap().date + Duration::days(1);
+
+        let mut full_timesheet: TimeSheet = Vec::new();
+        let mut index = 0;
+        for days in 0..(end - start).num_days() {
+            let current_date = start + Duration::days(days);
+            if current_date < timesheet[index].date {
+                full_timesheet.push(crate::models::TimeSheetRow::empty(current_date));
+            } else {
+                full_timesheet.push(timesheet[index].clone());
+                index += 1;
+            }
+        }
+        Ok(full_timesheet)
     }
 }
 

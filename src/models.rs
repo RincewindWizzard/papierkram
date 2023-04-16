@@ -1,14 +1,11 @@
-
-
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveTime, Timelike};
 use chrono::{DateTime, Local, Utc};
-
-
+use cli_table::{Cell, Color, format::Justify, print_stdout, Style, Table, WithTitle};
 
 
 use serde_derive::{Deserialize, Serialize};
 use crate::duration_newtype::Duration;
-
+use crate::table_cli_helper::{empty_if_duration_null, empty_if_time_null, cell_style_duration_unsigned, cell_style_duration_signed};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Event {
@@ -37,19 +34,44 @@ pub struct TimeEntry {
 
 pub(crate) type TimeSheet = Vec<TimeSheetRow>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+
+#[derive(Table, Debug, Serialize, Deserialize, Clone)]
 pub struct TimeSheetRow {
+    #[table(title = "Date", justify = "Justify::Left")]
     pub date: NaiveDate,
 
+    #[table(title = "Actual", justify = "Justify::Right", customize_fn = "cell_style_duration_unsigned")]
     pub actual_duration: Duration,
 
+    #[table(title = "Expected", justify = "Justify::Right", customize_fn = "cell_style_duration_unsigned")]
     pub expected_duration: Duration,
 
+    #[table(title = "Delta", justify = "Justify::Right", customize_fn = "cell_style_duration_signed")]
     pub delta: Duration,
 
+    #[table(title = "Saldo", justify = "Justify::Right", customize_fn = "cell_style_duration_signed")]
     pub saldo: Duration,
+
+    #[table(title = "SOB", justify = "Justify::Right", customize_fn = "empty_if_time_null")]
     pub normalized_start_of_business: NaiveTime,
+
+    #[table(title = "EOB", justify = "Justify::Right", customize_fn = "empty_if_time_null")]
     pub normalized_end_of_business: NaiveTime,
+}
+
+
+impl TimeSheetRow {
+    pub fn empty(date: NaiveDate) -> TimeSheetRow {
+        TimeSheetRow {
+            date,
+            actual_duration: Duration::default(),
+            expected_duration: Duration::default(),
+            delta: Duration::default(),
+            saldo: Duration::default(),
+            normalized_start_of_business: Default::default(),
+            normalized_end_of_business: Default::default(),
+        }
+    }
 }
 
 
