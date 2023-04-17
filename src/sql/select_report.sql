@@ -39,7 +39,7 @@ SELECT
     expected_duration,
     delta,
     ( -- sum all deltas before this date
-        SELECT SUM(delta) FROM timesheet_delta AS saldo_table WHERE timesheet.date > saldo_table.date
+        SELECT SUM(delta) FROM timesheet_delta AS saldo_table WHERE timesheet.date >= saldo_table.date
     ) as saldo,
     normalized_start_of_business,
     normalized_end_of_business
