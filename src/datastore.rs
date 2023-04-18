@@ -300,21 +300,25 @@ impl DataStore for Connection {
     fn view_full_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
         let timesheet = self.view_timesheet(start, end)?;
 
-        let start = timesheet[0].date;
-        let end = timesheet.last().unwrap().date + Duration::days(1);
+        if timesheet.len() > 0 {
+            let start = timesheet[0].date;
+            let end = timesheet.last().unwrap().date + Duration::days(1);
 
-        let mut full_timesheet: TimeSheet = Vec::new();
-        let mut index = 0;
-        for days in 0..(end - start).num_days() {
-            let current_date = start + Duration::days(days);
-            if current_date < timesheet[index].date {
-                full_timesheet.push(crate::models::TimeSheetRow::empty(current_date));
-            } else {
-                full_timesheet.push(timesheet[index].clone());
-                index += 1;
+            let mut full_timesheet: TimeSheet = Vec::new();
+            let mut index = 0;
+            for days in 0..(end - start).num_days() {
+                let current_date = start + Duration::days(days);
+                if current_date < timesheet[index].date {
+                    full_timesheet.push(crate::models::TimeSheetRow::empty(current_date));
+                } else {
+                    full_timesheet.push(timesheet[index].clone());
+                    index += 1;
+                }
             }
+            Ok(full_timesheet)
+        } else {
+            Ok(timesheet)
         }
-        Ok(full_timesheet)
     }
 
     fn view_timesheet_export(&mut self) -> Result<TimeSheet> {
