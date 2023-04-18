@@ -279,6 +279,7 @@ impl DataStore for Connection {
     }
 
     fn view_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
+        debug!("Loading timesheet from {} to {}.", start, end);
         let timesheet = self.view_query(
             include_str!("sql/select_report.sql"),
             params![start, end],
@@ -290,7 +291,7 @@ impl DataStore for Connection {
                 saldo: row.get("saldo")?,
                 normalized_start_of_business: row.get("normalized_start_of_business")?,
                 normalized_end_of_business: row.get("normalized_end_of_business")?,
-                locations: row.get("events")?,
+                locations: row.get("events").unwrap_or("".to_string()),
             }),
         )?;
 
@@ -303,6 +304,7 @@ impl DataStore for Connection {
         if timesheet.len() > 0 {
             let start = timesheet[0].date;
             let end = timesheet.last().unwrap().date + Duration::days(1);
+            debug!("Printing timesheet from {} to {}.", start, end);
 
             let mut full_timesheet: TimeSheet = Vec::new();
             let mut index = 0;
