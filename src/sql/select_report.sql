@@ -32,6 +32,13 @@ WITH
         FROM worked_time_per_day
         LEFT JOIN expected_duration
         ON worked_time_per_day.date = expected_duration.date
+    ),
+    events_per_day AS (
+	SELECT
+       	    DATE(instant) as date,
+	    location as event_name
+	FROM office_location
+	GROUP BY DATE(instant), location
     )
 SELECT
     date,
@@ -39,12 +46,16 @@ SELECT
     expected_duration,
     delta,
     ( -- sum all deltas before this date
-        SELECT SUM(delta) FROM timesheet_delta AS saldo_table WHERE timesheet.date > saldo_table.date
-    ) as saldo,
+        SELECT SUM(delta) FROM timesheet_delta AS saldo_table WHERE timesheet.date >= saldo_table.date
+    ) AS saldo,
     normalized_start_of_business,
-    normalized_end_of_business
+    normalized_end_of_business,
+    (
+        SELECT GROUP_CONCAT(event_name, ", ")
+        FROM events_per_day
+        GROUP BY events_per_day.date
+        HAVING events_per_day.date = timesheet.date
+    ) AS events
 FROM timesheet_delta AS timesheet
 WHERE timesheet.date BETWEEN ? AND ?
 ORDER BY timesheet.date;
-
-

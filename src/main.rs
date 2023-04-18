@@ -48,7 +48,16 @@ fn main() {
     setup_logging(&args).expect("Failed to setup logging!");
     let mut config: ApplicationConfig = ApplicationConfig::load_config().expect("Could not load configuration!");
 
-    if let Commands::Clear {} = &args.command {
+    // Default operation is to show the timesheet
+    let command : &Commands = &args.command.unwrap_or(Commands::Toggl {
+        sub_command: TogglCommand::Show {
+            compact: false,
+            start: None,
+            end: None,
+        },
+    });
+
+    if let Commands::Clear {} = command {
         warn!("Removing old database and creating new.");
         config.database_path().map(std::fs::remove_file);
         return;
@@ -56,7 +65,7 @@ fn main() {
 
     let mut connection = Connection::connect_database(&config).expect("Could not connect to Database!");
 
-    match &args.command {
+    match command {
         Commands::Event { sub_command } => {
             match sub_command {
                 EventCommand::Insert { date, event } => {

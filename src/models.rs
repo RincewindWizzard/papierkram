@@ -57,6 +57,9 @@ pub struct TimeSheetRow {
 
     #[table(title = "EOB", justify = "Justify::Right", customize_fn = "empty_if_time_null")]
     pub normalized_end_of_business: NaiveTime,
+
+    #[table(title = "Location", justify = "Justify::Left")]
+    pub locations: String,
 }
 
 
@@ -70,6 +73,7 @@ impl TimeSheetRow {
             saldo: Duration::default(),
             normalized_start_of_business: Default::default(),
             normalized_end_of_business: Default::default(),
+            locations: "".to_string(),
         }
     }
 }

@@ -290,6 +290,7 @@ impl DataStore for Connection {
                 saldo: row.get("saldo")?,
                 normalized_start_of_business: row.get("normalized_start_of_business")?,
                 normalized_end_of_business: row.get("normalized_end_of_business")?,
+                locations: row.get("events")?,
             }),
         )?;
 
@@ -328,6 +329,7 @@ impl DataStore for Connection {
                 saldo: row.get("saldo")?,
                 normalized_start_of_business: row.get("normalized_start_of_business")?,
                 normalized_end_of_business: row.get("normalized_end_of_business")?,
+                locations: row.get("events")?,
             }),
         )?;
 

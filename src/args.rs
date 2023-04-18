@@ -6,7 +6,7 @@ use clap::Subcommand;
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub(crate) verbose: u8,
