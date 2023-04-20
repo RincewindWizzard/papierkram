@@ -4,7 +4,6 @@ use chrono::{Datelike, Duration, NaiveTime, TimeZone, Utc};
 use cli_table::Cell;
 use log::{debug, error, warn};
 use rusqlite::Connection;
-use crate::cli_calendar::calendar_table;
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStore;
 
@@ -71,23 +70,6 @@ pub fn execute_import(_config: ApplicationConfig, mut connection: Connection) {
             .err()
             .map(|e| warn!("Could not insert row: {:?}; Error: {:?}", row, e));
     }
-}
-
-
-pub fn execute_calendar(mut connection: Connection, start: &Option<String>, end: &Option<String>) {
-    use cli_table::Cell;
-    let (start, end) = parse_time_interval(start, end);
-
-    let events_per_date = connection.view_event_by_date().unwrap();
-    let column_max_len = connection.view_event_names().unwrap().join(", ").len();
-    let table = calendar_table(
-        start.date_naive(),
-        end.date_naive(),
-        events_per_date,
-        column_max_len,
-    );
-
-    assert!(cli_table::print_stdout(table).is_ok());
 }
 
 

@@ -77,9 +77,7 @@ pub enum TogglCommand {
         end: Option<String>,
     },
 
-    Export {
-
-    },
+    Export {},
 }
 
 #[derive(Debug, Subcommand)]
@@ -93,14 +91,6 @@ pub enum EventCommand {
     /// list all events as a table
     List {},
 
-    /// Prints a calender showing the weeks in rows
-    Calendar {
-        /// begin of the calendar
-        start: Option<String>,
-        /// end of the calendar.
-        /// leave blank for today
-        end: Option<String>,
-    },
     /// inserts a new event to the database
     Insert {
         /// manually overwrite the timestamp of the entry

@@ -26,7 +26,6 @@ mod args;
 mod config;
 mod datastore;
 mod dates;
-mod cli_calendar;
 mod toggl;
 mod commands;
 mod duration_newtype;
@@ -104,9 +103,6 @@ fn main() {
             match sub_command {
                 EventCommand::Insert { date, event } => {
                     crate::commands::event::execute_add(connection, date, event);
-                }
-                EventCommand::Calendar { start, end } => {
-                    crate::commands::event::execute_calendar(connection, start, end);
                 }
                 EventCommand::List {} => {
                     crate::commands::event::execute_list(connection);
