@@ -143,7 +143,7 @@ impl ApplicationConfig {
             Err(confy_error) => {
                 match confy_error {
                     ConfyError::BadTomlData(toml_error) => {
-                        let contents = fs::read_to_string(path)?;
+                        let contents = fs::read_to_string(&path)?;
                         let lines: String = contents
                             .split("\n")
                             .zip(1..)
@@ -152,7 +152,8 @@ impl ApplicationConfig {
                             .join("\n");
 
                         let message = format!("{toml_error}").red();
-                        let message = format!("Error in configuration: {message}\n\n{lines}");
+                        let path = path.display();
+                        let message = format!("Error in configuration {path}:\n{message}\n\n{lines}");
                         Err(anyhow::Error::msg(message))
                     }
                     error => {

@@ -20,8 +20,8 @@ impl Duration {
 
     pub fn format_unsigned(&self) -> String {
         let cdur = self.chrono_duration;
-        let seconds = cdur.num_seconds().rem_euclid(60).abs();
-        let minutes = cdur.num_minutes().rem_euclid(60).abs();
+        let seconds = (cdur.num_seconds() % 60).abs();
+        let minutes = (cdur.num_minutes() % 60).abs();
         let hours = cdur.num_hours().abs();
         format!("{hours:02}:{minutes:02}:{seconds:02}")
     }
@@ -35,8 +35,8 @@ impl Duration {
         } else {
             " "
         };
-        let seconds = cdur.num_seconds().rem_euclid(60).abs();
-        let minutes = cdur.num_minutes().rem_euclid(60).abs();
+        let seconds = (cdur.num_seconds() % 60).abs();
+        let minutes = (cdur.num_minutes() % 60).abs();
         let hours = cdur.num_hours().abs();
         format!("{sign}{hours:02}:{minutes:02}:{seconds:02}")
     }
@@ -130,3 +130,16 @@ impl Default for Duration {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::duration_newtype::Duration;
+
+    #[test]
+    fn test_format() {
+        let duration = Duration::of(chrono::Duration::seconds(10));
+        assert_eq!(duration.format_signed(), "+00:00:10");
+
+        let duration = Duration::of(chrono::Duration::seconds(-10));
+        assert_eq!(duration.format_signed(), "-00:00:10");
+    }
+}

@@ -369,10 +369,11 @@ mod tests {
             };
             connection.insert_time_entry(&time_entry).unwrap();
         }
+        let end = begin + Duration::days(10);
         connection.insert_default_expected_duration(Duration::seconds(42)).unwrap();
         assert_eq!(10, connection.list_time_entries().unwrap().len());
-        assert_eq!(9, connection.view_timesheet().unwrap().len());
+        assert_eq!(9, connection.view_timesheet(begin, end).unwrap().len());
 
-        println!("{:?}", connection.view_timesheet().unwrap());
+        println!("{:?}", connection.view_timesheet(begin, end).unwrap());
     }
 }
