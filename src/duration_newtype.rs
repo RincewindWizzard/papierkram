@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use cli_table::{Cell, Color, Style};
+
 use rusqlite::ToSql;
 use rusqlite::types::{FromSql, FromSqlResult, ToSqlOutput, ValueRef};
 use serde::{de, Deserializer};

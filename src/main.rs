@@ -7,12 +7,12 @@
 
 
 use std::process;
-use anyhow::Error;
+
 use chrono::{TimeZone};
 use clap::Parser;
 
 
-use log::{error, SetLoggerError, warn};
+use log::{SetLoggerError, warn};
 use rusqlite::Connection;
 
 use crate::args::{Args, EventCommand, TogglCommand};

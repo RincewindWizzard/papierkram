@@ -1,11 +1,11 @@
-use chrono::{NaiveDate, NaiveTime, Timelike};
+use chrono::{NaiveDate, NaiveTime};
 use chrono::{DateTime, Local, Utc};
-use cli_table::{Cell, Color, format::Justify, print_stdout, Style, Table, WithTitle};
+use cli_table::{Cell, format::Justify, Table};
 
 
 use serde_derive::{Deserialize, Serialize};
 use crate::duration_newtype::Duration;
-use crate::table_cli_helper::{empty_if_duration_null, empty_if_time_null, cell_style_duration_unsigned, cell_style_duration_signed, cell_style_naive_date};
+use crate::table_cli_helper::{empty_if_time_null, cell_style_duration_unsigned, cell_style_duration_signed, cell_style_naive_date};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Event {

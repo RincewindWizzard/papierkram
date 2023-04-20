@@ -36,7 +36,7 @@ pub fn cell_style_naive_date(cell: cli_table::CellStruct, value: &NaiveDate) -> 
 }
 
 
-pub fn cell_style_duration_unsigned(cell: cli_table::CellStruct, value: &Duration) -> cli_table::CellStruct {
+pub fn cell_style_duration_unsigned(_cell: cli_table::CellStruct, value: &Duration) -> cli_table::CellStruct {
     if value.chrono_duration.num_seconds() != 0 {
         value.format_unsigned().cell()
     } else {
@@ -45,7 +45,7 @@ pub fn cell_style_duration_unsigned(cell: cli_table::CellStruct, value: &Duratio
 }
 
 
-pub fn cell_style_duration_signed(cell: cli_table::CellStruct, value: &Duration) -> cli_table::CellStruct {
+pub fn cell_style_duration_signed(_cell: cli_table::CellStruct, value: &Duration) -> cli_table::CellStruct {
     if value.chrono_duration.num_seconds() > 0 {
         value.format_signed().cell().foreground_color(Some(Color::Green))
     } else if value.chrono_duration.num_seconds() < 0 {

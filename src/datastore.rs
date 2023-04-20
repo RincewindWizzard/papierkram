@@ -1,6 +1,6 @@
 use thiserror::Error;
 use std::collections::HashMap;
-use std::ops::Deref;
+
 
 use chrono::{Duration, NaiveDate, Utc};
 use log::debug;
@@ -274,7 +274,7 @@ impl DataStore for Connection {
         self.view_query(
             "select DISTINCT(location) as name from office_location;",
             params![],
-            |row| Ok(row.get("name")?),
+            |row| row.get("name"),
         )
     }
 
@@ -301,7 +301,7 @@ impl DataStore for Connection {
     fn view_full_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
         let timesheet = self.view_timesheet(start, end)?;
 
-        if timesheet.len() > 0 {
+        if !timesheet.is_empty() {
             let start = timesheet[0].date;
             let end = timesheet.last().unwrap().date + Duration::days(1);
             debug!("Printing timesheet from {} to {}.", start, end);

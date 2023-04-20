@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::Display;
+
+
 use std::fs;
 use std::path::{PathBuf};
 use colored::Colorize;
@@ -145,7 +145,7 @@ impl ApplicationConfig {
                     ConfyError::BadTomlData(toml_error) => {
                         let contents = fs::read_to_string(&path)?;
                         let lines: String = contents
-                            .split("\n")
+                            .split('\n')
                             .zip(1..)
                             .map(|(line, number)| format!("    {number:>3}    {line}"))
                             .collect::<Vec<String>>()

@@ -1,13 +1,13 @@
-use std::cmp::{max, min};
+
 use std::io;
-use chrono::{Datelike, Duration, NaiveTime, TimeZone, Utc};
+use chrono::{Utc};
 use cli_table::Cell;
 use log::{debug, error, warn};
 use rusqlite::Connection;
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStore;
 
-use crate::dates::{parse_date_time, parse_time_interval};
+use crate::dates::{parse_date_time};
 use crate::models::Event;
 
 pub fn execute_add(mut connection: Connection, date: &Option<String>, location: &String) {

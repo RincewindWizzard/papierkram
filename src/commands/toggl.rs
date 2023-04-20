@@ -1,16 +1,16 @@
-use std::ops::Deref;
+
 use chrono::{Duration, NaiveDate, Utc};
-use cli_table::{Cell, CellStruct, Style, Table, TableStruct, WithTitle};
-use cli_table::format::{Border, HorizontalLine, Separator, VerticalLine};
+use cli_table::{WithTitle};
+use cli_table::format::{VerticalLine};
 use log::{debug, error};
 use rusqlite::Connection;
-use crate::args::{Args, TogglCommand};
+use crate::args::{TogglCommand};
 use crate::config;
-use crate::config::{ApplicationConfig, Toggl};
+use crate::config::{ApplicationConfig};
 use crate::datastore::DataStore;
 use crate::dates::parse_time_interval;
 
-use crate::models::{TimeEntry, TimeSheet, TimeSheetRow};
+
 use crate::toggl::get_time_entries;
 use crate::table_cli_helper::TableFormatter;
 
@@ -24,7 +24,7 @@ pub fn main(config: &mut ApplicationConfig, command: &crate::args::TogglCommand,
                 None => {
                     error!("There is no toggl access configured!")
                 }
-                Some(toggl) => {
+                Some(_toggl) => {
                     let (start, end) = parse_time_interval(start, end);
                     execute_show(config, connection, *compact, start.date_naive(), end.date_naive());
                 }
@@ -65,7 +65,7 @@ pub fn execute_show(
     let now = Utc::now().date_naive();
     let start = now - Duration::weeks(9);
     let end = now + Duration::days(1);
-    let result = get_time_entries(&toggl, &start, &end)
+    let result = get_time_entries(toggl, &start, &end)
         .expect("Could not access the toggl API!");
 
     debug!("Got all time entries!");
@@ -83,7 +83,7 @@ pub fn execute_show(
         connection.view_full_timesheet(show_start, show_stop)
     }.unwrap();
 
-    let vertical_line = VerticalLine::new('│');
+    let _vertical_line = VerticalLine::new('│');
 
 
     let table = timesheet.with_title().format_table();
