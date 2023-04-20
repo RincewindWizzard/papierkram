@@ -6,6 +6,8 @@
 
 
 
+use std::process;
+use anyhow::Error;
 use chrono::{TimeZone};
 use clap::Parser;
 
@@ -40,16 +42,48 @@ fn setup_logging(args: &Args) -> Result<(), SetLoggerError> {
         .init()
 }
 
+pub trait ErrorHandler<T> {
+    fn handle_error(self) -> T;
+}
+
+impl<T> ErrorHandler<T> for Result<T, anyhow::Error> {
+    fn handle_error(self) -> T {
+        match self {
+            Ok(value) => { value }
+            Err(error) => {
+                let rust_backtrace = std::env::var("RUST_BACKTRACE")
+                    .ok()
+                    .map(|var| var == "1")
+                    .unwrap_or(false);
+
+                let rust_lib_backtrace = std::env::var("RUST_LIB_BACKTRACE")
+                    .ok()
+                    .map(|var| var == "1")
+                    .unwrap_or(false);
+
+                if rust_backtrace || rust_lib_backtrace {
+                    Err::<T, anyhow::Error>(error).unwrap();
+                } else {
+                    for cause in error.chain() {
+                        println!("{cause}");
+                    }
+                }
+                process::exit(1);
+            }
+        }
+    }
+}
+
 
 /// Main Method
 fn main() {
     use crate::args::{Commands};
     let args = Args::parse();
     setup_logging(&args).expect("Failed to setup logging!");
-    let mut config: ApplicationConfig = ApplicationConfig::load_config().expect("Could not load configuration!");
+    let mut config: ApplicationConfig = ApplicationConfig::load_config().handle_error();
 
     // Default operation is to show the timesheet
-    let command : &Commands = &args.command.unwrap_or(Commands::Toggl {
+    let command: &Commands = &args.command.unwrap_or(Commands::Toggl {
         sub_command: TogglCommand::Show {
             compact: false,
             start: None,

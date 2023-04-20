@@ -1,6 +1,9 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
 use std::fs;
 use std::path::{PathBuf};
+use colored::Colorize;
 use confy::ConfyError;
 use directories::ProjectDirs;
 use log::debug;
@@ -17,12 +20,12 @@ pub struct ApplicationConfig {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Toggl {
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct WorkWeek {
-    pub default_expected_duration_seconds: u64
+    pub default_expected_duration_seconds: u64,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -131,9 +134,33 @@ impl ApplicationConfig {
         Ok(config_file_path)
     }
 
-    pub fn load_config() -> Result<ApplicationConfig, ConfyError> {
-        let config: ApplicationConfig = confy::load_path(ApplicationConfig::config_file_path()?)?;
-        Ok(config)
+    pub fn load_config() -> anyhow::Result<ApplicationConfig> {
+        let path = ApplicationConfig::config_file_path()?;
+        let result: Result<ApplicationConfig, ConfyError> = confy::load_path(&path);
+
+        match result {
+            Ok(config) => { Ok(config) }
+            Err(confy_error) => {
+                match confy_error {
+                    ConfyError::BadTomlData(toml_error) => {
+                        let contents = fs::read_to_string(path)?;
+                        let lines: String = contents
+                            .split("\n")
+                            .zip(1..)
+                            .map(|(line, number)| format!("    {number:>3}    {line}"))
+                            .collect::<Vec<String>>()
+                            .join("\n");
+
+                        let message = format!("{toml_error}").red();
+                        let message = format!("Error in configuration: {message}\n\n{lines}");
+                        Err(anyhow::Error::msg(message))
+                    }
+                    error => {
+                        Err(anyhow::Error::msg(error))
+                    }
+                }
+            }
+        }
     }
 
 
