@@ -32,6 +32,8 @@ pub enum Commands {
     /// execute all probes and insert all detected events
     Detect {},
 
+    SQL {},
+
     /// removes database
     Clear {},
     /// show current configuration

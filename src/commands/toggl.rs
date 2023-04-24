@@ -91,6 +91,3 @@ pub fn execute_show(
     assert!(cli_table::print_stdout(table).is_ok());
 }
 
-
-fn time_report(_connection: &Connection) {}
-

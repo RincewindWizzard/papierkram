@@ -6,7 +6,8 @@
 
 
 
-use std::process;
+use std::{process, result};
+use std::process::Command;
 
 use chrono::{TimeZone};
 use clap::Parser;
@@ -128,6 +129,17 @@ fn main() {
         Commands::Config { .. } => {
             let toml = toml::to_string(&config);
             println!("{}", toml.unwrap());
+        }
+        Commands::SQL { .. } => {
+            let db_path = config.database_path().unwrap();
+            let result = Command::new("sqlite3")
+                .arg(db_path.into_os_string())
+                .spawn()
+                .expect("Could not execute sqlite3")
+                .wait();
+
+
+            process::exit(result.unwrap().code().unwrap());
         }
     }
 }

@@ -281,7 +281,7 @@ impl DataStore for Connection {
     fn view_timesheet(&mut self, start: NaiveDate, end: NaiveDate) -> Result<TimeSheet> {
         debug!("Loading timesheet from {} to {}.", start, end);
         let timesheet = self.view_query(
-            include_str!("sql/select_report.sql"),
+            "SELECT date, actual_duration, expected_duration, delta, saldo, normalized_start_of_business, normalized_end_of_business, events FROM timesheet WHERE timesheet.date BETWEEN ? AND ?;",
             params![start, end],
             |row| Ok(crate::models::TimeSheetRow {
                 date: row.get("date")?,
@@ -325,7 +325,7 @@ impl DataStore for Connection {
 
     fn view_timesheet_export(&mut self) -> Result<TimeSheet> {
         let timesheet = self.view_query(
-            include_str!("sql/select_report_export.sql"),
+            "SELECT date, actual_duration, expected_duration, delta, saldo, normalized_start_of_business, normalized_end_of_business, events FROM timesheet;",
             params![],
             |row| Ok(crate::models::TimeSheetRow {
                 date: row.get("date")?,
